@@ -11,16 +11,28 @@ endif()
 
 project ("Forerunner")
 
+# Project Source
+file(GLOB_RECURSE FORERUNNER_SRC src/*.cpp)
+
+# IMGUI
+file(GLOB IMGUI_SRC 
+	lib/imgui/*.h
+	lib/imgui/*.cpp
+	lib/imgui/backends/imgui_impl_dx11.*
+	lib/imgui/backends/imgui_impl_win32.*
+)
+
+
 # Add source to this project's executable.
-add_executable (Forerunner WIN32 "src/launcher/main.cpp" resources/forerunner.rc "src/launcher/launcher.cpp" )
+#add_executable (Forerunner WIN32 "src/launcher/main.cpp" resources/forerunner.rc "src/launcher/launcher.cpp"  "src/launcher/launcher.h")
+add_executable (Forerunner WIN32 resources/forerunner.rc ${FORERUNNER_SRC} ${IMGUI_SRC})
 
-if (CMAKE_VERSION VERSION_GREATER 3.12)
-  set_property(TARGET Forerunner PROPERTY CXX_STANDARD 20)
-endif()
-
+set_property(TARGET Forerunner PROPERTY CXX_STANDARD 20)
 
 target_link_libraries(Forerunner PRIVATE 
 	d3d11.lib
 )
 
-# TODO: Add tests and install targets if needed.
+target_include_directories(Forerunner PRIVATE
+	lib/imgui
+)

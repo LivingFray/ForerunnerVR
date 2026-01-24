@@ -5,11 +5,13 @@
 #include <d3d11.h>
 #include <format>
 #include "../../resources/resource.h"
+#include "launcher.h"
 
 static ID3D11Device* D3D11Device;
 static ID3D11DeviceContext* D3D11DeviceContext;
 static IDXGISwapChain* D3D11SwapChain;
 static ID3D11RenderTargetView* D3D11FrameBufferView;
+static Launcher LauncherInst;
 
 static bool InitialiseDirectX(HWND Window)
 {
@@ -77,6 +79,11 @@ static bool InitialiseDirectX(HWND Window)
 
 LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 {
+	if (LauncherInst.WndProcHandler(hwnd, msg, wparam, lparam))
+	{
+		return true;
+	}
+
 	LRESULT result = 0;
 	switch (msg)
 	{
@@ -142,6 +149,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInsance, LPSTR lpCmdLine,
 		return GetLastError();
 	}
 
+	LauncherInst.Initialise(Window, D3D11Device, D3D11DeviceContext, D3D11SwapChain);
+
 	// Main update loop
 	bool bShouldQuit = false;
 	while (!bShouldQuit)
@@ -157,11 +166,17 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInsance, LPSTR lpCmdLine,
 			DispatchMessage(&Message);
 		}
 
-		FLOAT backgroundColor[4] = {0.1f, 0.2f, 0.6f, 1.0f};
-		D3D11DeviceContext->ClearRenderTargetView(D3D11FrameBufferView, backgroundColor);
+		LauncherInst.Update();
 
 		D3D11SwapChain->Present(1, 0);
 	}
+
+	LauncherInst.Shutdown();
+
+	D3D11Device->Release();
+	D3D11DeviceContext->Release();
+	D3D11SwapChain->Release();
+	D3D11FrameBufferView->Release();
 
 	return S_OK;
 }
