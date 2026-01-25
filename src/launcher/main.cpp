@@ -10,7 +10,6 @@
 static ID3D11Device* D3D11Device;
 static ID3D11DeviceContext* D3D11DeviceContext;
 static IDXGISwapChain* D3D11SwapChain;
-static ID3D11RenderTargetView* D3D11FrameBufferView;
 static Launcher LauncherInst;
 
 static bool InitialiseDirectX(HWND Window)
@@ -54,34 +53,15 @@ static bool InitialiseDirectX(HWND Window)
 		return false;
 	}
 
-	// Create Framebuffer Render Target
-	ID3D11Texture2D* FrameBuffer = nullptr;
-	Result = D3D11SwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (void**) &FrameBuffer);
-
-	if (FAILED(Result))
-	{
-		MessageBoxA(0, "D3D11SwapChain->GetBuffer Failed", std::format("Error: {}", Result).c_str(), MB_OK);
-		return false;
-	}
-
-	if (!FrameBuffer)
-	{
-		MessageBoxA(0, "FrameBuffer was null", "Error", MB_OK);
-		return false;
-	}
-
-	D3D11Device->CreateRenderTargetView(FrameBuffer, 0, &D3D11FrameBufferView);
-
-	FrameBuffer->Release();
-
 	return true;
 }
 
 LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 {
-	if (LauncherInst.WndProcHandler(hwnd, msg, wparam, lparam))
+	LRESULT OutResult = 0;
+	if (LauncherInst.WndProcHandler(hwnd, msg, wparam, lparam, OutResult))
 	{
-		return true;
+		return OutResult;
 	}
 
 	LRESULT result = 0;
@@ -123,7 +103,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInsance, LPSTR lpCmdLine,
 		return GetLastError();
 	}
 
-	RECT InitialRect = {0, 0, 1024, 768};
+	RECT InitialRect = {0, 0, 1366, 768};
 	AdjustWindowRectEx(&InitialRect, WS_OVERLAPPEDWINDOW, FALSE, WS_EX_OVERLAPPEDWINDOW);
 	LONG InitialWidth = InitialRect.right - InitialRect.left;
 	LONG InitialHeight = InitialRect.bottom - InitialRect.top;
@@ -176,7 +156,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInsance, LPSTR lpCmdLine,
 	D3D11Device->Release();
 	D3D11DeviceContext->Release();
 	D3D11SwapChain->Release();
-	D3D11FrameBufferView->Release();
 
 	return S_OK;
 }

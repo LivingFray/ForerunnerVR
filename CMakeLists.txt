@@ -24,7 +24,6 @@ file(GLOB IMGUI_SRC
 
 
 # Add source to this project's executable.
-#add_executable (Forerunner WIN32 "src/launcher/main.cpp" resources/forerunner.rc "src/launcher/launcher.cpp"  "src/launcher/launcher.h")
 add_executable (Forerunner WIN32 resources/forerunner.rc ${FORERUNNER_SRC} ${IMGUI_SRC})
 
 set_property(TARGET Forerunner PROPERTY CXX_STANDARD 20)
