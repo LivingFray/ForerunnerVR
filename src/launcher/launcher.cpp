@@ -3,6 +3,8 @@
 #include <backends/imgui_impl_win32.h>
 #include <backends/imgui_impl_dx11.h>
 #include <d3d11.h>
+#include "common/utils/inject.h"
+#include <chrono>
 
 
 void Launcher::Initialise(HWND Window, ID3D11Device* InDevice, ID3D11DeviceContext* InContext, IDXGISwapChain* InSwapChain)
@@ -223,10 +225,12 @@ void Launcher::DrawMainWindow()
 
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(8.0f, 8.0f));
 	ImGui::BeginChild("MainWindow_Sub", ImVec2(0, 0), ImGuiChildFlags_AlwaysUseWindowPadding);
-	const bool bIsHaloRunning = false;
+
+	RefreshHaloProcess();
+
 	if (bIsHaloRunning)
 	{
-		ImGui::TextColored(ImVec4(0.0f, 0.8f, 0.0f, 1.0f), "Halo: Master Chief Collection is running (%s)", "halo.exe");
+		ImGui::TextColored(ImVec4(0.0f, 0.8f, 0.0f, 1.0f), "Halo: Master Chief Collection is running (PID: %d)", LastHaloProcessId);
 	}
 	else
 	{
@@ -263,4 +267,18 @@ void Launcher::DrawSettingsWindow()
 	ImGui::PushFont(nullptr, style.FontSizeBase * 4.0f);
 	ImGui::SeparatorText("Settings");
 	ImGui::PopFont();
+}
+
+void Launcher::RefreshHaloProcess()
+{
+	std::chrono::high_resolution_clock::time_point CurrentTime = std::chrono::high_resolution_clock::now();
+
+	constexpr auto CheckInterval = std::chrono::milliseconds(100);
+	static const char* HaloProcessName = "MCC-Win64-Shipping.exe";
+
+	if ((CurrentTime - LastCheckedForHalo) > CheckInterval)
+	{
+		LastCheckedForHalo = CurrentTime;
+		bIsHaloRunning = Inject::FindProcess(HaloProcessName, LastHaloProcessId);
+	}
 }

@@ -2,6 +2,7 @@
 #define NOMINMAX
 #define UNICODE
 #include <windows.h>
+#include <chrono>
 
 class Launcher
 {
@@ -26,6 +27,8 @@ private:
 	void DrawHaloCEWindow();
 	void DrawSettingsWindow();
 
+	void RefreshHaloProcess();
+
 	ELauncherWindow ActiveWindow = ELauncherWindow::Main;
 
 	struct ID3D11Device* Device;
@@ -34,4 +37,8 @@ private:
 	struct ID3D11RenderTargetView* RenderTargetView;
 	UINT ResizeWidth = 0;
 	UINT ResizeHeight = 0;
+
+	bool bIsHaloRunning = false;
+	DWORD LastHaloProcessId = 0;
+	std::chrono::high_resolution_clock::time_point LastCheckedForHalo;
 };

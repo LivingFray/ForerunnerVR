@@ -35,3 +35,7 @@ target_link_libraries(Forerunner PRIVATE
 target_include_directories(Forerunner PRIVATE
 	lib/imgui
 )
+
+target_include_directories(Forerunner PUBLIC
+	src
+)
