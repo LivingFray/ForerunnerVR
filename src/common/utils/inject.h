@@ -6,4 +6,5 @@
 namespace Inject
 {
 	bool FindProcess(const char* ProcessName, DWORD& OutProcess);
+	bool InjectDLL(const char* DLLName, DWORD Process);
 }

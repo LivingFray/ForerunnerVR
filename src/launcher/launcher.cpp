@@ -1,10 +1,14 @@
+// Forerunner
 #include "launcher.h"
+#include "common/utils/inject.h"
+// ImGui
 #include <imgui.h>
 #include <backends/imgui_impl_win32.h>
 #include <backends/imgui_impl_dx11.h>
+// System
 #include <d3d11.h>
-#include "common/utils/inject.h"
 #include <chrono>
+#include <filesystem>
 
 
 void Launcher::Initialise(HWND Window, ID3D11Device* InDevice, ID3D11DeviceContext* InContext, IDXGISwapChain* InSwapChain)
@@ -237,10 +241,13 @@ void Launcher::DrawMainWindow()
 		ImGui::TextColored(ImVec4(0.8f, 0.0f, 0.0f, 1.0f), "Halo: Master Chief Collection is not running");
 	}
 
+	ImGui::BeginDisabled(!bIsHaloRunning);
 	if (ImGui::Button("Inject"))
 	{
-		MessageBoxA(0, "Pretend this is injecting", "1337 h4x0r injection", MB_OK);
+		std::filesystem::path DLLPath = std::filesystem::current_path() / "Forerunner_Inject.dll";
+		Inject::InjectDLL(DLLPath.string().c_str(), LastHaloProcessId);
 	}
+	ImGui::EndDisabled();
 	ImGui::EndChild();
 	ImGui::PopStyleVar();
 }
