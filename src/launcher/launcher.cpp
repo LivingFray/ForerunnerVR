@@ -110,6 +110,9 @@ void Launcher::Initialise(HWND Window, ID3D11Device* InDevice, ID3D11DeviceConte
 	SwapChain->GetBuffer(0, IID_PPV_ARGS(&BackBuffer));
 	Device->CreateRenderTargetView(BackBuffer, nullptr, &RenderTargetView);
 	BackBuffer->Release();
+
+	// Find DLL file to inject
+	CalculatePayloadPath();
 }
 
 void Launcher::Shutdown()
@@ -241,11 +244,15 @@ void Launcher::DrawMainWindow()
 		ImGui::TextColored(ImVec4(0.8f, 0.0f, 0.0f, 1.0f), "Halo: Master Chief Collection is not running");
 	}
 
-	ImGui::BeginDisabled(!bIsHaloRunning);
+	if (PayloadPath.empty())
+	{
+		ImGui::TextColored(ImVec4(0.8f, 0.0f, 0.0f, 1.0f), "Payload DLL not found, check Forerunner was installed correctly");
+	}
+
+	ImGui::BeginDisabled(!bIsHaloRunning || PayloadPath.empty());
 	if (ImGui::Button("Inject"))
 	{
-		std::filesystem::path DLLPath = std::filesystem::current_path() / "Forerunner_Inject.dll";
-		Inject::InjectDLL(DLLPath.string().c_str(), LastHaloProcessId);
+		Inject::InjectDLL(PayloadPath.c_str(), LastHaloProcessId);
 	}
 	ImGui::EndDisabled();
 	ImGui::EndChild();
@@ -287,5 +294,20 @@ void Launcher::RefreshHaloProcess()
 	{
 		LastCheckedForHalo = CurrentTime;
 		bIsHaloRunning = Inject::FindProcess(HaloProcessName, LastHaloProcessId);
+	}
+}
+
+void Launcher::CalculatePayloadPath()
+{
+	// Find Forerunner.dll in the same directory as this .exe
+	// Set PayloadPath to the full path, or an empty string if the file doesn't exist
+	std::filesystem::path DLLPath = std::filesystem::current_path() / "Forerunner.dll";
+	if (std::filesystem::exists(DLLPath))
+	{
+		PayloadPath = DLLPath.string();
+	}
+	else
+	{
+		PayloadPath = "";
 	}
 }

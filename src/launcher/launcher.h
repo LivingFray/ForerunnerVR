@@ -28,6 +28,7 @@ private:
 	void DrawSettingsWindow();
 
 	void RefreshHaloProcess();
+	void CalculatePayloadPath();
 
 	ELauncherWindow ActiveWindow = ELauncherWindow::Main;
 
@@ -41,4 +42,6 @@ private:
 	bool bIsHaloRunning = false;
 	DWORD LastHaloProcessId = 0;
 	std::chrono::high_resolution_clock::time_point LastCheckedForHalo;
+
+	std::string PayloadPath;
 };

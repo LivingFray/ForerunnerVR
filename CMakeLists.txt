@@ -12,7 +12,8 @@ endif()
 project ("Forerunner")
 
 # Project Source
-file(GLOB_RECURSE FORERUNNER_SRC src/*.cpp)
+# Only collect launcher / top-level application sources here (do not include payload sources)
+file(GLOB_RECURSE FORERUNNER_SRC src/launcher/*.cpp src/*.cpp)
 
 # IMGUI
 file(GLOB IMGUI_SRC 
@@ -25,6 +26,27 @@ file(GLOB IMGUI_SRC
 
 # Add source to this project's executable.
 add_executable (Forerunner WIN32 resources/forerunner.rc ${FORERUNNER_SRC} ${IMGUI_SRC})
+
+
+# Put the executable output into the shared runtime folder
+set_target_properties(Forerunner PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+)
+
+# On Visual Studio, mark the launcher exe as the startup project so the IDE will launch it
+set_property(DIRECTORY PROPERTY VS_STARTUP_PROJECT Forerunner)
+
+# Build payload DLL (placed into the same output folder)
+add_subdirectory(src/payload)
+
+# Ensure the launcher executable will build the payload DLL first
+add_dependencies(Forerunner ForerunnerPayload)
+
+# Provide debugger command and working directory for Visual Studio
+set_target_properties(Forerunner PROPERTIES
+    VS_DEBUGGER_COMMAND "$<TARGET_FILE:Forerunner>"
+    VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+)
 
 set_property(TARGET Forerunner PROPERTY CXX_STANDARD 20)
 
