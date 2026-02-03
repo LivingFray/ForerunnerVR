@@ -4,11 +4,12 @@
 #include <windows.h>
 #include <Psapi.h>
 #include <iostream>
+#include "payload/forerunner/modulehandler.h"
 
 static long long BaseAddress;
 
 DWORD WINAPI MainLoop(HMODULE hModule)
-{
+{	
 	HMODULE H2Handle = GetModuleHandleA("halo2.dll");
 
 	if (!H2Handle)
@@ -35,6 +36,7 @@ DWORD WINAPI MainLoop(HMODULE hModule)
 	FILE* fp;
 	freopen_s(&fp, "CONOUT$", "w", stdout);
 
+	ModuleHandler::Get().Initialise();
 
 	while (true)
 	{

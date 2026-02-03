@@ -1,5 +1,9 @@
 #include "inject.h"
 #include "utils.h"
+#define WIN32_LEAN_AND_MEAN
+#define NOMINMAX
+#define UNICODE
+#include <windows.h>
 
 #include <psapi.h>
 #include <string>
@@ -120,4 +124,9 @@ bool Inject::InjectDLL(const char* DLLName, DWORD Process)
 	}
 
 	return true;
+}
+
+HMODULE Inject::FindModule(const char* ModuleName)
+{
+	return GetModuleHandleA(ModuleName);
 }

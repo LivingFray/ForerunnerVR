@@ -2,7 +2,7 @@
 # CMake rules for building the payload DLL
 
 # Collect payload sources
-file(GLOB_RECURSE PAYLOAD_SRC "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/*.c")
+file(GLOB_RECURSE PAYLOAD_SRC "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/*.c" "${CMAKE_CURRENT_SOURCE_DIR}/../common/*.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/../common/*.c")
 
 add_library(ForerunnerPayload SHARED ${PAYLOAD_SRC})
 
