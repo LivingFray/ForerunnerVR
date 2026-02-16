@@ -13,7 +13,7 @@ project ("Forerunner")
 
 # Project Source
 # Only collect launcher / top-level application sources here (do not include payload sources)
-file(GLOB_RECURSE FORERUNNER_SRC src/launcher/*.cpp src/*.cpp)
+file(GLOB_RECURSE FORERUNNER_SRC src/launcher/*.cpp src/common/*.cpp)
 
 # IMGUI
 file(GLOB IMGUI_SRC 
@@ -23,9 +23,14 @@ file(GLOB IMGUI_SRC
 	lib/imgui/backends/imgui_impl_win32.*
 )
 
+# MinHook
+file (GLOB MINHOOK_SRC
+	lib/minhook/src/*.cpp
+)
+
 
 # Add source to this project's executable.
-add_executable (Forerunner WIN32 resources/forerunner.rc ${FORERUNNER_SRC} ${IMGUI_SRC})
+add_executable (Forerunner WIN32 resources/forerunner.rc ${FORERUNNER_SRC} ${IMGUI_SRC} ${MINHOOK_SRC})
 
 
 # Put the executable output into the shared runtime folder
@@ -56,6 +61,7 @@ target_link_libraries(Forerunner PRIVATE
 
 target_include_directories(Forerunner PRIVATE
 	lib/imgui
+	lib/minhook/include
 )
 
 target_include_directories(Forerunner PUBLIC

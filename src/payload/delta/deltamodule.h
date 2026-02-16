@@ -14,4 +14,8 @@ public:
 protected:
 	static inline const char* ModuleName = "halo2.dll";
 	HMODULE GameModule;
+
+	bool CreatePatches();
+
+	bool ApplyPatches();
 };

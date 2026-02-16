@@ -60,7 +60,6 @@ static BOOL CALLBACK EnumWindowsProc(HWND HWnd, LPARAM lParam)
 	return TRUE;
 }
 
-
 bool Inject::FindProcess(const char* ProcessName, DWORD& OutProcess)
 {
 	FindProcessParam Param;
@@ -127,6 +126,11 @@ bool Inject::InjectDLL(const char* DLLName, DWORD Process)
 }
 
 HMODULE Inject::FindModule(const char* ModuleName)
-{
+{	
+	// No Module name, use calling process
+	if (strlen(ModuleName) == 0)
+	{
+		return GetModuleHandleA(nullptr);
+	}
 	return GetModuleHandleA(ModuleName);
 }
