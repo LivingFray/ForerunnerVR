@@ -25,3 +25,11 @@ struct real_plane3d
 	float d;
 };
 static_assert(sizeof(real_plane3d) == 0x10);
+
+struct real_matrix4x3
+{
+	float scale;
+	float rotation[9]; // TODO: replace with 3x3 matrix
+	real_vector3d translation;
+};
+static_assert(sizeof(real_matrix4x3) == 0x34);
