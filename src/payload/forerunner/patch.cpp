@@ -17,7 +17,7 @@ bool Patch::Initialise()
 	MH_STATUS InitStatus = MH_Initialize();
 	if (InitStatus != MH_OK)
 	{
-		std::cout << "[Error] [Patch] Minhook failed to initialize: " << MH_StatusToString(InitStatus) << std::endl;
+		FORERUNNER_ERROR(Patch, "Minhook failed to initialize : {}", MH_StatusToString(InitStatus));
 		return false;
 	}
 
@@ -32,7 +32,7 @@ void* Patch::SearchSignature(const char* ModuleName, int64_t RVA, const char* Si
 	HMODULE TargetModule = Inject::FindModule(ModuleName);
 	if (!TargetModule)
 	{
-		std::cout << "[Error] [Patch] Failed to find target module " << ModuleName << std::endl;
+		FORERUNNER_ERROR(Patch, "Failed to find target module {}", ModuleName);
 		return nullptr;
 	}
 
@@ -40,14 +40,14 @@ void* Patch::SearchSignature(const char* ModuleName, int64_t RVA, const char* Si
 	BOOL Result = GetModuleInformation(GetCurrentProcess(), TargetModule, &ModuleInfo, sizeof(ModuleInfo));
 	if (!Result)
 	{
-		std::cout << "[Error] [Patch] Failed to get module information for " << ModuleName << std::endl;
+		FORERUNNER_ERROR(Patch, "Failed to get module information for ", ModuleName);
 		return nullptr;
 	}
 
 	// No signature was provided, no choice but to blindly trust the RVA is correct
 	if (!Signature || strlen(Signature) == 0)
 	{
-		std::cout << "[Warn] [Patch] No signature provided for " << SearchName << ", assuming RVA 0x" << std::hex << RVA << std::dec << " is correct" << std::endl;
+		FORERUNNER_WARN(Patch, "No signature provided for {}, assuming RVA {:#08x} is correct", SearchName, RVA);
 		return reinterpret_cast<void*>(reinterpret_cast<unsigned char*>(ModuleInfo.lpBaseOfDll) + RVA);
 	}
 
@@ -96,7 +96,7 @@ void* Patch::SearchSignature(const char* ModuleName, int64_t RVA, const char* Si
 	// Everything is still valid, use provided address
 	if (!bIsOutdated)
 	{
-		std::cout << "[Log] [Patch] " << SearchName << " (" << Signature << ") successfully located at 0x" << std::hex << RVA << std::dec << std::endl;
+		FORERUNNER_LOG(Patch, "{} ({}) successfully located at {:#08x}", SearchName, Signature, RVA);
 		return reinterpret_cast<void*>(reinterpret_cast<unsigned char*>(ModuleInfo.lpBaseOfDll) + RVA);
 	}
 
@@ -116,11 +116,11 @@ void* Patch::SearchSignature(const char* ModuleName, int64_t RVA, const char* Si
 
 		if (bFound)
 		{
-			std::cout << "[Log] [Patch]: " << SearchName << " (" << Signature << ") successfuly located at new RVA of 0x" << std::hex << i << std::dec << std::endl;
+			FORERUNNER_LOG(Patch, "{} ({}) successfuly located at new RVA of {:#08x}", SearchName, Signature, RVA);
 			return reinterpret_cast<unsigned char*>(ModuleInfo.lpBaseOfDll) + i;
 		}
 	}
 
-	std::cout << "[Error] [Patch] Failed to locate " << SearchName << " (" << Signature << ")" << std::endl;
+	FORERUNNER_ERROR(Patch, "Failed to locate {} ({})", SearchName, Signature);
 	return nullptr;
 }

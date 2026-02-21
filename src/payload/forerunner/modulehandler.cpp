@@ -3,6 +3,7 @@
 #include <iostream>
 #include "payload/forerunner/patch.h"
 #include "payload/delta/deltamodule.h"
+#include "common/utils/log.h"
 
 void ModuleHandler::Initialise()
 {
@@ -11,14 +12,18 @@ void ModuleHandler::Initialise()
 	{
 		return;
 	}
+
+	FORERUNNER_LOG(Forerunner, "Loading modules...");
 	
 	// TODO: Menu/MCC module
 	if (DeltaModule::Get().Initialise())
 	{
-		std::cout << "Delta Module loaded" << std::endl;
+		FORERUNNER_LOG(Forerunner, "Delta Module loaded");
 	}
 	else
 	{
-		std::cout << "Delta Module failed to load" << std::endl;
+		FORERUNNER_WARN(Forerunner, "Delta Module failed to load");
 	}
+
+	FORERUNNER_LOG(Forerunner, "All modules loaded");
 }

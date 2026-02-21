@@ -1,6 +1,5 @@
 #include "deltamodule.h"
 #include "common/utils/inject.h"
-
 #include "patches/render/update_player_view_frustum.h"
 
 bool DeltaModule::Initialise()
@@ -9,18 +8,23 @@ bool DeltaModule::Initialise()
 	GameModule = Inject::FindModule(ModuleName);
 	if (GameModule == NULL)
 	{
+		FORERUNNER_WARN(Delta, "Can't find module, game is likely not installed");
 		return false;
 	}
 
 	if (!CreatePatches())
 	{
+		FORERUNNER_ERROR(Delta, "Failed to create all patches");
 		return false;
 	}
 
 	if (!ApplyPatches())
 	{
+		FORERUNNER_ERROR(Delta, "Failed to apply all patches");
 		return false;
 	}
+
+	FORERUNNER_LOG(Delta, "Successfully patched");
 
 	return true;
 }

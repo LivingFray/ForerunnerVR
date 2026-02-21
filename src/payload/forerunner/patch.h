@@ -3,6 +3,9 @@
 #include <cstdint>
 #include <iostream>
 #include <MinHook.h>
+#include "common/utils/log.h"
+
+FORERUNNER_CREATE_LOG_CATEGORY(Patch);
 
 // Create a hook for a function at a certain memory address, arguments are:
 // Module the target function is in
@@ -33,7 +36,7 @@ public: \
 		MH_STATUS Result = MH_CreateHook(PATCH_Address, &FunctionName::Patch, reinterpret_cast<LPVOID*>(&Original)); \
 		if (Result != MH_OK) \
 		{ \
-			std::cout << "[Error] [Patch] Could not create hook for " Module ": " << MH_StatusToString(Result) << std::endl; \
+			FORERUNNER_ERROR(Patch, "Could not create hook for " Module ": {}", MH_StatusToString(Result)); \
 			return false; \
 		} \
 		return true; \
@@ -44,7 +47,7 @@ public: \
 		MH_STATUS Result = MH_EnableHook(PATCH_Address); \
 		if (Result != MH_OK) \
 		{ \
-			std::cout << "[Error] [Patch] Could not enable hook for " Module ": " << MH_StatusToString(Result) << std::endl; \
+			FORERUNNER_ERROR(Patch, "Could not enable hook for " Module ": {}", MH_StatusToString(Result)); \
 			return false; \
 		} \
 		return true; \

@@ -5,36 +5,22 @@
 #include <Psapi.h>
 #include <iostream>
 #include "payload/forerunner/modulehandler.h"
+#include "common/utils/log.h"
 
-static long long BaseAddress;
+
+void ConsoleLogConsumer(LogLevel Level, const LogCategory& Category, const std::string& Message)
+{
+	std::cout << "[" << LogLevelToString(Level) << "][" << Category.Name << "] " << Message << std::endl;
+}
 
 DWORD WINAPI MainLoop(HMODULE hModule)
 {	
-	HMODULE H2Handle = GetModuleHandleA("halo2.dll");
-
-	if (!H2Handle)
-	{
-		std::cout << "Can't find halo2 module!" << std::endl;
-		return 1;
-	}
-
-
-	MODULEINFO ModuleInfo;
-
-	BOOL Res = GetModuleInformation(GetCurrentProcess(), H2Handle, &ModuleInfo, sizeof(ModuleInfo));
-
-	if (!Res)
-	{
-		std::cout << "Can't get module information!" << std::endl;
-		return 1;
-	}
-
-	BaseAddress = reinterpret_cast<long long>(ModuleInfo.lpBaseOfDll);
-
 	// Debug console
 	AllocConsole();
 	FILE* fp;
 	freopen_s(&fp, "CONOUT$", "w", stdout);
+
+	LogManager::AddConsumer(ConsoleLogConsumer);
 
 	ModuleHandler::Get().Initialise();
 
@@ -55,8 +41,6 @@ DWORD WINAPI MainLoop(HMODULE hModule)
 
 	return 0;
 }
-
-
 
 BOOL APIENTRY DllMain(HMODULE hModule,
 	DWORD  ul_reason_for_call,
