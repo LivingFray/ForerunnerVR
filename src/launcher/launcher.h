@@ -43,7 +43,10 @@ private:
 
 	bool bIsHaloRunning = false;
 	DWORD LastHaloProcessId = 0;
+	DWORD InjectedHaloProcessId = 0;
 	std::chrono::high_resolution_clock::time_point LastCheckedForHalo;
 
 	std::string PayloadPath;
+
+	bool bAutoInject = true;
 };

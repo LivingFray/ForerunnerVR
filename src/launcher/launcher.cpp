@@ -249,12 +249,21 @@ void Launcher::DrawMainWindow()
 		ImGui::TextColored(ImVec4(0.8f, 0.0f, 0.0f, 1.0f), "Payload DLL not found, check Forerunner was installed correctly");
 	}
 
-	ImGui::BeginDisabled(!bIsHaloRunning || PayloadPath.empty());
-	if (ImGui::Button("Inject"))
+	const bool bCanInject = bIsHaloRunning && !PayloadPath.empty() && InjectedHaloProcessId != LastHaloProcessId;
+	const bool bShouldAutoInject = bAutoInject && bCanInject; // This will be a frame behind from any changes to the Auto Inject checkbox, but that is fine
+
+	ImGui::BeginDisabled(!bCanInject);
+	if (ImGui::Button("Inject") || bShouldAutoInject)
 	{
-		Inject::InjectDLL(PayloadPath.c_str(), LastHaloProcessId);
+		if (Inject::InjectDLL(PayloadPath.c_str(), LastHaloProcessId))
+		{
+			InjectedHaloProcessId = LastHaloProcessId;
+		}
 	}
 	ImGui::EndDisabled();
+
+	ImGui::Checkbox("Auto inject", &bAutoInject);
+
 	ImGui::EndChild();
 	ImGui::PopStyleVar();
 }
