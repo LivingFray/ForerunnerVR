@@ -1,6 +1,8 @@
 #include "deltamodule.h"
 #include "common/utils/inject.h"
 #include "patches/render/update_player_view_frustum.h"
+#include "patches/render/draw_splitscreen_borders.h"
+#include "patches/render/get_player_window_count.h"
 
 bool DeltaModule::Initialise()
 {
@@ -45,6 +47,8 @@ bool DeltaModule::CreatePatches()
 {
 	bool bSuccess = true;
 	bSuccess |= update_player_view_frustum::Create();
+	bSuccess |= draw_splitscreen_borders::Create();
+	bSuccess |= get_player_window_count::Create();
 
 	return bSuccess;
 }
@@ -53,6 +57,8 @@ bool DeltaModule::ApplyPatches()
 {
 	bool bSuccess = true;
 	bSuccess |= update_player_view_frustum::Enable();
+	bSuccess |= draw_splitscreen_borders::Enable();
+	bSuccess |= get_player_window_count::Enable();
 
 	return bSuccess;
 }
@@ -86,12 +92,11 @@ bool DeltaModule::PatchSplitscreen()
 	WriteBytes(update_player_views__valid_user_id, {0x31, 0xc9}); // XOR ECX, ECX: sets player_index to 0
 	WriteBytes(update_player_views__get_camera_result, {0x31, 0xc9}); // XOR ECX, ECX: sets player_index to 0
 
-	// Nb: Need to find where this gets set to 1 normally and override it there too
-	// Depending on when VR is injected that code will either have run already or the player globals won't be initialised
-	if ((players_globals*)g_players_globals != nullptr)
-	{
-		((players_globals*)g_players_globals)->player_user_count = 2;
-	}
+	// Remove the slight shrinking applied to the viewport in splitscreen (without the borders between views this is no longer needed)
+	WriteBytes(calculate_viewport__left, {0x0});
+	WriteBytes(calculate_viewport__right, {0x0});
+	WriteBytes(calculate_viewport__bottom, {0x0});
+	WriteBytes(calculate_viewport__top, {0x0});
 
 	return true;
 }

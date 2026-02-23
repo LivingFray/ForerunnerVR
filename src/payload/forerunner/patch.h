@@ -61,16 +61,16 @@ protected: \
 };
 
 // Define the location of a global variable based on a function call which accesses it, arguments are
+// The type of the global variable
+// Variable name which can be used to access the variable once it has been found
 // Module the global variable is in
 // Expected RVA of the variable
 // Unique signature of a segment of code which references this variable
 // Offset from the start of the signature to find the RIP-relative address of the global variable
-// The type of the global variable
-// Variable name which can be used to access the variable once it has been found
 // .Find() must be called on the returned Global once before it's value can be accessed
 // Ex:
 // .h:
-// GLOBAL("game.dll", 0xdeadbeef, "13 37 ?? ?? ?? ?? C0 DE", 3, int[512], g_example_global);
+// GLOBAL(int[512], g_example_global, "game.dll", 0xdeadbeef, "13 37 ?? ?? ?? ?? C0 DE", 3);
 // .cpp:
 // void Init()
 // {
@@ -78,15 +78,15 @@ protected: \
 // }
 // void Tick()
 // {
-//    g_example_global[3] = 6;
+//    (int[512])g_example_global[3] = 6;
 // }
 // somewhere in the game's asm:
 // ab cd
 // 13 37 [0x1234] // <-Signature start + 3 bytes = 0x1234, the offset from the RIP of the global
 // c0 de
 // da da
-#define GLOBAL(Module, ExpectedAddress, Signature, Offset, Type, Name) static inline Patch::Global<Type> Name = Patch::Global<Type>(Module, ExpectedAddress, Signature, Offset, #Name);
-#define OFFSET(Module, ExpectedAddress, Signature, Offset, Name) static inline Patch::MemoryAddress Name = Patch::MemoryAddress(Module, ExpectedAddress, Signature, Offset, #Name);
+#define GLOBAL(Type, Name, Module, ExpectedAddress, Signature, Offset) static inline Patch::Global<Type> Name = Patch::Global<Type>(Module, ExpectedAddress, Signature, Offset, #Name);
+#define OFFSET(Name, Module, ExpectedAddress, Signature, Offset) static inline Patch::MemoryAddress Name = Patch::MemoryAddress(Module, ExpectedAddress, Signature, Offset, #Name);
 
 namespace Patch
 {

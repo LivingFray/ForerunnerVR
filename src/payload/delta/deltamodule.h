@@ -32,8 +32,12 @@ protected:
 
 
 // --------------
-	OFFSET("halo2.dll", 0x9602a8, "ff c3 83 fb 04 7d ?? 8b cb e8 ?? ?? ?? ?? 84 c0 75 ?? ff c3 83 fb 04", 7, update_player_views__valid_user_id);
-	OFFSET("halo2.dll", 0x9602fc, "be 01 00 00 00 8d 6e 01 eb ?? 83 fb 04 7d ?? 83 fb ff 74 ?? e8 ?? ?? ?? ?? 84 c0 74 ?? 8b cb e8 ?? ?? ?? ?? 48 85 c0 74 ?? 48 89 44 24 30 44 8b cf 89 5c 24 28 44 8b c6 33 d2 44 89 7c 24 20", 29, update_player_views__get_camera_result);
+	OFFSET(update_player_views__valid_user_id,      "halo2.dll", 0x9602a8, "ff c3 83 fb 04 7d ?? 8b cb e8 ?? ?? ?? ?? 84 c0 75 ?? ff c3 83 fb 04", +7);
+	OFFSET(update_player_views__get_camera_result,  "halo2.dll", 0x9602fc, "be 01 00 00 00 8d 6e 01 eb ?? 83 fb 04 7d ?? 83 fb ff 74 ?? e8 ?? ?? ?? ?? 84 c0 74 ?? 8b cb e8 ?? ?? ?? ?? 48 85 c0 74 ?? 48 89 44 24 30 44 8b cf 89 5c 24 28 44 8b c6 33 d2 44 89 7c 24 20", +29);
+	OFFSET(calculate_viewport__left,                "halo2.dll", 0x7e0b35, "66 83 42 02 04 41 0f bf 06 0f bf 0e 03 c8 0f bf 45 00", +4);
+	OFFSET(calculate_viewport__right,               "halo2.dll", 0x7e0b56, "66 83 42 06 fc 66 83 7e 02 00 75 ?? 0f b7 44 24 50 66 89 07", +4);
+	OFFSET(calculate_viewport__bottom,              "halo2.dll", 0x7e0b6b, "66 83 02 04 41 0f bf 46 02 0f bf 4e 02 03 c8 0f bf 45 02 3b c8", +3);
+	OFFSET(calculate_viewport__top,                 "halo2.dll", 0x7e0b9a, "66 83 42 04 fc 48 8b 6c 24 58 48 83 c4 20 41 5e 5f 5e c3", +4);
 
-	GLOBAL("halo2.dll", 0xe80a20, "41 b8 40 04 00 00 48 8d 0d ?? ?? ?? ?? 48 8b d8 e8 ?? ?? ?? ?? 33 c9 66 89 4b 08", 30, players_globals*, g_players_globals);
+	GLOBAL(players_globals*, g_players_globals,     "halo2.dll", 0xe80a20, "41 b8 40 04 00 00 48 8d 0d ?? ?? ?? ?? 48 8b d8 e8 ?? ?? ?? ?? 33 c9 66 89 4b 08", +30);
 };
