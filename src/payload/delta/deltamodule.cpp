@@ -12,6 +12,12 @@ bool DeltaModule::Initialise()
 		return false;
 	}
 
+	if (!FindGlobals())
+	{
+		FORERUNNER_ERROR(Delta, "Failed to find all necessary globals");
+		return false;
+	}
+
 	if (!CreatePatches())
 	{
 		FORERUNNER_ERROR(Delta, "Failed to create all patches");
@@ -21,6 +27,12 @@ bool DeltaModule::Initialise()
 	if (!ApplyPatches())
 	{
 		FORERUNNER_ERROR(Delta, "Failed to apply all patches");
+		return false;
+	}
+
+	if (!PatchCode())
+	{
+		FORERUNNER_ERROR(Delta, "Failed to apply all inline patches");
 		return false;
 	}
 
@@ -43,4 +55,43 @@ bool DeltaModule::ApplyPatches()
 	bSuccess |= update_player_view_frustum::Enable();
 
 	return bSuccess;
+}
+
+bool DeltaModule::FindGlobals()
+{
+	bool bSuccess = true;
+
+	bSuccess |= g_players_globals.Find();
+
+	return true;
+}
+
+bool DeltaModule::PatchCode()
+{
+	bool bSuccess = true;
+	Patch::SuspendThreads();
+	FORERUNNER_LOG(Delta, "Suspending threads");
+
+	bSuccess |= PatchSplitscreen();
+
+	Patch::ResumeThreads();
+	FORERUNNER_LOG(Delta, "Resuming threads");
+	return bSuccess;
+}
+
+
+bool DeltaModule::PatchSplitscreen()
+{
+	// Patch 2 function calls in update_player_views to use player 0 as the target player
+	WriteBytes(update_player_views__valid_user_id, {0x31, 0xc9}); // XOR ECX, ECX: sets player_index to 0
+	WriteBytes(update_player_views__get_camera_result, {0x31, 0xc9}); // XOR ECX, ECX: sets player_index to 0
+
+	// Nb: Need to find where this gets set to 1 normally and override it there too
+	// Depending on when VR is injected that code will either have run already or the player globals won't be initialised
+	if ((players_globals*)g_players_globals != nullptr)
+	{
+		((players_globals*)g_players_globals)->player_user_count = 2;
+	}
+
+	return true;
 }
