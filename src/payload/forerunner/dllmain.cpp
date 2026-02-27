@@ -10,7 +10,26 @@
 
 void ConsoleLogConsumer(LogLevel Level, const LogCategory& Category, const std::string& Message)
 {
+	HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+
+	switch (Level)
+	{
+		case LogLevel::Log:
+			SetConsoleTextAttribute(hConsole, FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE);
+			break;
+		case LogLevel::Warn:
+			SetConsoleTextAttribute(hConsole, FOREGROUND_RED | FOREGROUND_GREEN);
+			break;
+		case LogLevel::Error:
+			SetConsoleTextAttribute(hConsole, FOREGROUND_RED);
+			break;
+		default:
+			break;
+	}
+
 	std::cout << "[" << LogLevelToString(Level) << "][" << Category.Name << "] " << Message << std::endl;
+
+	SetConsoleTextAttribute(hConsole, FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE);
 }
 
 DWORD WINAPI MainLoop(HMODULE hModule)
