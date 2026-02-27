@@ -6,6 +6,7 @@
 #include <format>
 #include "../../resources/resource.h"
 #include "launcher.h"
+#include <dwmapi.h>
 
 static ID3D11Device* D3D11Device;
 static ID3D11DeviceContext* D3D11DeviceContext;
@@ -111,7 +112,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInsance, LPSTR lpCmdLine,
 	HWND Window = CreateWindowExW(WS_EX_OVERLAPPEDWINDOW,
 		WinClass.lpszClassName,
 		L"Forerunner",
-		WS_OVERLAPPEDWINDOW | WS_VISIBLE,
+		WS_OVERLAPPEDWINDOW,
 		CW_USEDEFAULT, CW_USEDEFAULT,
 		InitialWidth,
 		InitialHeight,
@@ -122,6 +123,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInsance, LPSTR lpCmdLine,
 		MessageBoxA(0, "CreateWindowEx failed", "Fatal Error", MB_OK);
 		return GetLastError();
 	}
+
+	BOOL Value = TRUE;
+	DwmSetWindowAttribute(Window, DWMWA_USE_IMMERSIVE_DARK_MODE, &Value, sizeof(Value));
+	ShowWindow(Window, SW_SHOW);
+	UpdateWindow(Window);
 
 	// Create DX11 objects
 	if (!InitialiseDirectX(Window))
