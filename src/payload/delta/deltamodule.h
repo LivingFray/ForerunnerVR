@@ -11,10 +11,32 @@
 
 FORERUNNER_CREATE_LOG_CATEGORY(Delta);
 
+// TEMP!!
+// Use to test simple d3d11 interactions, later replace this with VR/move into a VR emulator backend
+class RenderTest
+{
+public:
+	void Init();
+
+	void Draw();
+
+protected:
+
+	struct IDXGISwapChain1* SwapChain = nullptr;
+	struct ID3D11RenderTargetView* RenderTargetView;
+	HWND NewWindow = NULL;
+};
+
 class DeltaModule : public Singleton<DeltaModule>
 {
 public:
 	bool Initialise();
+
+	void Present();
+
+	static struct ID3D11Device* GetDevice();
+	static struct ID3D11DeviceContext* GetDeviceContext();
+	static struct ID3D11RenderTargetView* GetOutputRenderTarget();
 
 protected:
 	static inline const char* ModuleName = "halo2.dll";
@@ -31,6 +53,8 @@ protected:
 	bool PatchSplitscreen();
 
 
+	RenderTest Test;
+
 // --------------
 	OFFSET(update_player_views__valid_user_id,      "halo2.dll", 0x9602a8, "ff c3 83 fb 04 7d ?? 8b cb e8 ?? ?? ?? ?? 84 c0 75 ?? ff c3 83 fb 04", +7);
 	OFFSET(update_player_views__get_camera_result,  "halo2.dll", 0x9602fc, "be 01 00 00 00 8d 6e 01 eb ?? 83 fb 04 7d ?? 83 fb ff 74 ?? e8 ?? ?? ?? ?? 84 c0 74 ?? 8b cb e8 ?? ?? ?? ?? 48 85 c0 74 ?? 48 89 44 24 30 44 8b cf 89 5c 24 28 44 8b c6 33 d2 44 89 7c 24 20", +29);
@@ -40,4 +64,8 @@ protected:
 	OFFSET(calculate_viewport__top,                 "halo2.dll", 0x7e0b9a, "66 83 42 04 fc 48 8b 6c 24 58 48 83 c4 20 41 5e 5f 5e c3", +4);
 
 	GLOBAL(players_globals*, g_players_globals,     "halo2.dll", 0xe80a20, "41 b8 40 04 00 00 48 8d 0d ?? ?? ?? ?? 48 8b d8 e8 ?? ?? ?? ?? 33 c9 66 89 4b 08", +30);
+
+	GLOBAL(struct ID3D11Device*, g_device,                   "halo2.dll", 0x197ed68, "", 0);
+	GLOBAL(struct ID3D11DeviceContext*, g_device_context,    "halo2.dll", 0x197ed70, "", 0);
+	GLOBAL(struct ID3D11RenderTargetView*, g_output_target,  "halo2.dll", 0x197ee58, "", 0);
 };
