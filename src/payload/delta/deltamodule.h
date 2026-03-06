@@ -8,6 +8,7 @@
 #include "common/utils/log.h"
 #include "payload/forerunner/patch.h"
 #include "blam/game/players.h"
+#include "blam/rasterizer/rasterizer_globals.h"
 
 FORERUNNER_CREATE_LOG_CATEGORY(Delta);
 
@@ -16,14 +17,14 @@ FORERUNNER_CREATE_LOG_CATEGORY(Delta);
 class RenderTest
 {
 public:
+	void ResizeBuffers();
 	void Init();
 
 	void Draw();
 
-protected:
-
 	struct IDXGISwapChain1* SwapChain = nullptr;
 	struct ID3D11RenderTargetView* RenderTargetView;
+	struct ID3D11RenderTargetView* MirrorTargetView;
 	HWND NewWindow = NULL;
 };
 
@@ -32,11 +33,13 @@ class DeltaModule : public Singleton<DeltaModule>
 public:
 	bool Initialise();
 
+	void ResourcesInitialize();
 	void Present();
 
 	static struct ID3D11Device* GetDevice();
 	static struct ID3D11DeviceContext* GetDeviceContext();
-	static struct ID3D11RenderTargetView* GetOutputRenderTarget();
+	static struct ID3D11RenderTargetView*& GetOutputRenderTarget();
+	static struct rasterizer_globals& GetRasterizerGlobals();
 
 protected:
 	static inline const char* ModuleName = "halo2.dll";
@@ -68,4 +71,17 @@ protected:
 	GLOBAL(struct ID3D11Device*, g_device,                   "halo2.dll", 0x197ed68, "", 0);
 	GLOBAL(struct ID3D11DeviceContext*, g_device_context,    "halo2.dll", 0x197ed70, "", 0);
 	GLOBAL(struct ID3D11RenderTargetView*, g_output_target,  "halo2.dll", 0x197ee58, "", 0);
+
+	GLOBAL(rasterizer_globals, g_rasterizer_globals, "halo2.dll", 0x1994858, "", 0);
+
+public:
+
+	//GLOBAL(struct IDXGISwapChain*, g_swap_chain, "halo2.dll", 0x1a23008, "", 0);
+	GLOBAL(struct IDXGISwapChain*, g_swap_chain, "halo2.dll", 0x197ee48, "", 0); // "swap_chain_1"
+
+	GLOBAL(void(), rasterizer_refresh, "halo2.dll", 0x37ed0, "", 0);
+
+	GLOBAL(void(), rasterizer_initialize, "halo2.dll", 0x953050, "", 0);
+	GLOBAL(void(int, int), rasterizer_set_display_size, "halo2.dll", 0x954dd0, "", 0);
+	GLOBAL(void(), rasterizer_deinitialize, "halo2.dll", 0x953030, "", 0);
 };

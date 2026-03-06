@@ -46,6 +46,19 @@ bool DeltaModule::Initialise()
 	return true;
 }
 
+void DeltaModule::ResourcesInitialize()
+{
+	FORERUNNER_LOG(Delta, "ResourcesInitialize");
+
+	// Not inited yet
+	if (!Test.NewWindow)
+	{
+		return;
+	}
+
+	(ID3D11RenderTargetView*&)g_output_target = Test.RenderTargetView;
+}
+
 void DeltaModule::Present()
 {
 	Test.Draw();
@@ -61,9 +74,14 @@ ID3D11DeviceContext* DeltaModule::GetDeviceContext()
 	return g_device_context;
 }
 
-ID3D11RenderTargetView* DeltaModule::GetOutputRenderTarget()
+ID3D11RenderTargetView*& DeltaModule::GetOutputRenderTarget()
 {
 	return g_output_target;
+}
+
+rasterizer_globals& DeltaModule::GetRasterizerGlobals()
+{
+	return g_rasterizer_globals;
 }
 
 bool DeltaModule::CreatePatches()
@@ -96,6 +114,12 @@ bool DeltaModule::FindGlobals()
 	bSuccess |= g_device.Find();
 	bSuccess |= g_device_context.Find();
 	bSuccess |= g_output_target.Find();
+	bSuccess |= g_rasterizer_globals.Find();
+	bSuccess |= g_swap_chain.Find();
+	bSuccess |= rasterizer_refresh.Find();
+	bSuccess |= rasterizer_initialize.Find();
+	bSuccess |= rasterizer_set_display_size.Find();
+	bSuccess |= rasterizer_deinitialize.Find();
 
 	return true;
 }
@@ -145,6 +169,28 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 	return result;
 }
 
+void RenderTest::ResizeBuffers()
+{
+	DXGI_SWAP_CHAIN_DESC desc;
+	((IDXGISwapChain*)DeltaModule::Get().g_swap_chain)->GetDesc(&desc);
+	UINT bufferCount = desc.BufferCount;
+
+	FORERUNNER_LOG(Delta, "g_swap_chain: {}x{} ({})", desc.BufferDesc.Width, desc.BufferDesc.Height, desc.BufferCount);
+
+	// Free any existing references before performing the resize (TODO: there's probably a call that does this all when the window gets resized that can be borrowed)
+	DeltaModule::Get().rasterizer_deinitialize();
+	FORERUNNER_LOG(Delta, "Deinitializing rasterizer");
+
+	DeltaModule::Get().rasterizer_set_display_size(800, 600);
+	FORERUNNER_LOG(Delta, "Setting rasterizer display size");
+
+	DeltaModule::Get().rasterizer_initialize();
+	FORERUNNER_LOG(Delta, "Deinitializing rasterizer");
+
+	MirrorTargetView = DeltaModule::Get().GetOutputRenderTarget();
+	DeltaModule::Get().GetOutputRenderTarget() = RenderTargetView;
+}
+
 void RenderTest::Init()
 {
 	FORERUNNER_LOG(Delta, "Render Init");
@@ -164,7 +210,10 @@ void RenderTest::Init()
 		return;
 	}
 
-	NewWindow = CreateWindowExW(0, WinClass.lpszClassName, L"Forerunner Render Test", WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, 800, 600, 0, 0, GetModuleHandleW(0), 0);
+	RECT WindowRect = {0, 0, 800, 600};
+	AdjustWindowRect(&WindowRect, WS_OVERLAPPEDWINDOW, FALSE);
+
+	NewWindow = CreateWindowExW(0, WinClass.lpszClassName, L"Forerunner Render Test", WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, WindowRect.right - WindowRect.left, WindowRect.bottom - WindowRect.top, 0, 0, GetModuleHandleW(0), 0);
 
 	FORERUNNER_LOG(Delta, "Created window");
 
@@ -231,6 +280,12 @@ void RenderTest::Draw()
 	if (!NewWindow)
 	{
 		Init();
+		ResizeBuffers();
+
+		rasterizer_globals& globals = DeltaModule::Get().GetRasterizerGlobals();
+
+		FORERUNNER_LOG(Delta, "Frame: {} {} {} {} | screen: {} {} {} {}", globals.frame_bounds.x0, globals.frame_bounds.x1, globals.frame_bounds.y0, globals.frame_bounds.y1,
+			globals.screen_bounds.x0, globals.screen_bounds.x1, globals.screen_bounds.y0, globals.screen_bounds.y1);
 	}
 
 	MSG Message{};
@@ -245,73 +300,49 @@ void RenderTest::Draw()
 
 	ID3D11RenderTargetView* PrevTargetView;
 	ID3D11DepthStencilView* DepthStencilView;
-
+	
+	const float clear_color_with_alpha[4] = {0.2f, 0.2f, 0.4f, 1.0f};
 	Context->OMGetRenderTargets(1, &PrevTargetView, &DepthStencilView);
+	Context->OMSetRenderTargets(1, &MirrorTargetView, nullptr);
+	Context->ClearRenderTargetView(MirrorTargetView, clear_color_with_alpha);
+	Context->OMSetRenderTargets(1, &PrevTargetView, DepthStencilView);
 
-	ID3D11RenderTargetView* TargetView = DeltaModule::Get().GetOutputRenderTarget();
-
-	// If we grabbed a valid target view, attempt to blit/copy it to our swapchain backbuffer.
-	if (TargetView && SwapChain)
 	{
 		ID3D11Resource* srcResource = nullptr;
-		TargetView->GetResource(&srcResource);
-		if (srcResource)
-		{
-			ID3D11Texture2D* srcTex = nullptr;
-			if (SUCCEEDED(srcResource->QueryInterface(__uuidof(ID3D11Texture2D), (void**)&srcTex)) && srcTex)
-			{
-				ID3D11Texture2D* backBuffer = nullptr;
-				if (SUCCEEDED(SwapChain->GetBuffer(0, IID_PPV_ARGS(&backBuffer))) && backBuffer)
-				{
-					// Compare descs to see if a direct GPU copy is possible.
-					D3D11_TEXTURE2D_DESC srcDesc{};
-					D3D11_TEXTURE2D_DESC dstDesc{};
-					srcTex->GetDesc(&srcDesc);
-					backBuffer->GetDesc(&dstDesc);
+		RenderTargetView->GetResource(&srcResource);
 
-					// Fast path: same size & format -> GPU CopyResource (no scaling).
-					if (srcDesc.Width == dstDesc.Width &&
-						srcDesc.Height == dstDesc.Height &&
-						srcDesc.Format == dstDesc.Format)
-					{
-						Context->CopyResource(backBuffer, srcTex);
-					}
-					else
-					{
-						// Fallback: copy a clipped region (no scaling). This will copy the top-left portion of the source
-						// into the backbuffer. To perform proper scaling/stretching you should render a fullscreen textured
-						// quad: create a shader-resource-view for srcTex, set the backbuffer RTV and draw a quad with a
-						// vertex/pixel shader that samples the SRV (preferred approach).
-						D3D11_BOX srcBox;
-						srcBox.left = 0;
-						srcBox.top = 0;
-						srcBox.front = 0;
-						srcBox.right = std::min(srcDesc.Width, dstDesc.Width);
-						srcBox.bottom = std::min(srcDesc.Height, dstDesc.Height);
-						srcBox.back = 1;
-						Context->CopySubresourceRegion(backBuffer, 0, 0, 0, 0, srcTex, 0, &srcBox);
-					}
+		ID3D11Texture2D* srcTex = nullptr;
+		srcResource->QueryInterface(__uuidof(ID3D11Texture2D), (void**)&srcTex);
 
-					// Present the swapchain (shows the copied contents)
-					SwapChain->Present(0, 0);
+		ID3D11Resource* dstResource = nullptr;
+		MirrorTargetView->GetResource(&dstResource);
 
-					backBuffer->Release();
-				}
-				srcTex->Release();
-			}
-			srcResource->Release();
-		}
-	}
-	else
-	{
-		const float clear_color_with_alpha[4] = {static_cast <float> (rand()) / static_cast <float> (RAND_MAX), static_cast <float> (rand()) / static_cast <float> (RAND_MAX), static_cast <float> (rand()) / static_cast <float> (RAND_MAX), 1.0f};
-		Context->OMSetRenderTargets(1, &RenderTargetView, nullptr);
-		Context->ClearRenderTargetView(RenderTargetView, clear_color_with_alpha);
-		// No target view; just present (or you could clear the swapchain RT to indicate no content).
-		SwapChain->Present(0, 0);
+		ID3D11Texture2D* dstTex = nullptr;
+		dstResource->QueryInterface(__uuidof(ID3D11Texture2D), (void**)&dstTex);
+
+		D3D11_TEXTURE2D_DESC srcDesc{};
+		D3D11_TEXTURE2D_DESC dstDesc{};
+		srcTex->GetDesc(&srcDesc);
+		dstTex->GetDesc(&dstDesc);
+
+		D3D11_BOX srcBox;
+		srcBox.left = 0;
+		srcBox.top = 0;
+		srcBox.front = 0;
+		srcBox.right = std::min(srcDesc.Width, dstDesc.Width);
+		srcBox.bottom = std::min(srcDesc.Height, dstDesc.Height);
+		srcBox.back = 1;
+
+		Context->CopySubresourceRegion(dstResource, 0, 0, 0, 0, srcTex, 0, &srcBox);
+
+		srcTex->Release();
+		dstTex->Release();
+		srcResource->Release();
+		dstResource->Release();
 	}
 
-	Context->OMSetRenderTargets(1, &PrevTargetView, DepthStencilView);
+	SwapChain->Present(0, 0);
+
 	if (PrevTargetView)
 	{
 		PrevTargetView->Release();

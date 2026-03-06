@@ -3,7 +3,6 @@
 
 void rasterizer_present::Patch()
 {
-	Original();
-
 	DeltaModule::Get().Present();
+	Original();
 }
