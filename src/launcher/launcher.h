@@ -49,4 +49,5 @@ private:
 	std::string PayloadPath;
 
 	bool bAutoInject = true;
+	bool bCloseOnInject = true;
 };

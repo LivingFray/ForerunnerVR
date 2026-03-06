@@ -258,11 +258,17 @@ void Launcher::DrawMainWindow()
 		if (Inject::InjectDLL(PayloadPath.c_str(), LastHaloProcessId))
 		{
 			InjectedHaloProcessId = LastHaloProcessId;
+			
+			if (bCloseOnInject)
+			{
+				PostQuitMessage(0);
+			}
 		}
 	}
 	ImGui::EndDisabled();
 
 	ImGui::Checkbox("Auto inject", &bAutoInject);
+	ImGui::Checkbox("Close on inject", &bCloseOnInject);
 
 	ImGui::EndChild();
 	ImGui::PopStyleVar();
