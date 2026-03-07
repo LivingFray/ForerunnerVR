@@ -92,6 +92,8 @@ bool DeltaModule::CreatePatches()
 	bSuccess |= get_player_window_count::Create();
 	bSuccess |= rasterizer_present::Create();
 
+	bSuccess |= draw_hud_layer::Create();
+
 	return bSuccess;
 }
 
@@ -102,6 +104,8 @@ bool DeltaModule::ApplyPatches()
 	bSuccess |= draw_splitscreen_borders::Enable();
 	bSuccess |= get_player_window_count::Enable();
 	bSuccess |= rasterizer_present::Enable();
+
+	bSuccess |= draw_hud_layer::Enable();
 
 	return bSuccess;
 }
@@ -149,6 +153,8 @@ bool DeltaModule::PatchSplitscreen()
 	WriteBytes(calculate_viewport__right, {0x0});
 	WriteBytes(calculate_viewport__bottom, {0x0});
 	WriteBytes(calculate_viewport__top, {0x0});
+
+	//WriteBytes(render_hud, {0x90, 0x90, 0x90, 0x90, 0x90}); // nop render_hud
 
 	return true;
 }
@@ -272,6 +278,30 @@ void RenderTest::Init()
 
 	ShowWindow(NewWindow, SW_SHOW);
 	UpdateWindow(NewWindow);
+
+	// Create UI render view
+	{
+		D3D11_TEXTURE2D_DESC bufferDesc{};
+		bufferDesc.ArraySize = 1;
+		bufferDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+		bufferDesc.CPUAccessFlags = 0;
+		bufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+		bufferDesc.Width = 800;
+		bufferDesc.Height = 600;
+		bufferDesc.MipLevels = 1;
+		bufferDesc.MiscFlags = 0;
+		bufferDesc.SampleDesc.Count = 1;
+		bufferDesc.SampleDesc.Quality = 0;
+		bufferDesc.Usage = D3D11_USAGE_DEFAULT;
+		Device->CreateTexture2D(&bufferDesc, 0, &UITexture);
+
+		//Creating a view of the texture to be used when binding it as a render target
+		D3D11_RENDER_TARGET_VIEW_DESC renderTargetViewDesc;
+		renderTargetViewDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+		renderTargetViewDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
+		renderTargetViewDesc.Texture2D.MipSlice = 0;
+		Device->CreateRenderTargetView(UITexture, 0, &UITargetView);
+	}
 }
 
 void RenderTest::Draw()
@@ -335,6 +365,9 @@ void RenderTest::Draw()
 
 		Context->CopySubresourceRegion(dstResource, 0, 0, 0, 0, srcTex, 0, &srcBox);
 
+
+		Context->CopySubresourceRegion(dstResource, 0, 800, 0, 0, UITexture, 0, &srcBox);
+
 		srcTex->Release();
 		dstTex->Release();
 		srcResource->Release();
@@ -351,4 +384,19 @@ void RenderTest::Draw()
 	{
 		DepthStencilView->Release();
 	}
+}
+
+void draw_hud_layer::Patch()
+{
+	ID3D11RenderTargetView* ActiveRenderTarget = DeltaModule::Get().GetOutputRenderTarget();
+
+	DeltaModule::Get().GetOutputRenderTarget() = DeltaModule::Get().Test.UITargetView;
+
+	// set target to new RT
+	// set sizes here?
+	Original();
+
+	// restore target
+
+	DeltaModule::Get().GetOutputRenderTarget() = ActiveRenderTarget;
 }

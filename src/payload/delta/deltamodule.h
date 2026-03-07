@@ -25,6 +25,9 @@ public:
 	struct IDXGISwapChain1* SwapChain = nullptr;
 	struct ID3D11RenderTargetView* RenderTargetView;
 	struct ID3D11RenderTargetView* MirrorTargetView;
+	struct ID3D11RenderTargetView* UITargetView;
+	struct ID3D11Texture2D* UITexture;
+
 	HWND NewWindow = NULL;
 };
 
@@ -41,6 +44,8 @@ public:
 	static struct ID3D11RenderTargetView*& GetOutputRenderTarget();
 	static struct rasterizer_globals& GetRasterizerGlobals();
 
+	RenderTest Test;
+
 protected:
 	static inline const char* ModuleName = "halo2.dll";
 	HMODULE GameModule;
@@ -55,8 +60,6 @@ protected:
 
 	bool PatchSplitscreen();
 
-
-	RenderTest Test;
 
 // --------------
 	OFFSET(update_player_views__valid_user_id,      "halo2.dll", 0x9602a8, "ff c3 83 fb 04 7d ?? 8b cb e8 ?? ?? ?? ?? 84 c0 75 ?? ff c3 83 fb 04", +7);
@@ -76,6 +79,9 @@ protected:
 
 public:
 
+	//OFFSET(render_hud, "halo2.dll", 0x7e3507, "", 0);
+	OFFSET(render_hud, "halo2.dll", 0x822346, "", 0);
+
 	//GLOBAL(struct IDXGISwapChain*, g_swap_chain, "halo2.dll", 0x1a23008, "", 0);
 	GLOBAL(struct IDXGISwapChain*, g_swap_chain, "halo2.dll", 0x197ee48, "", 0); // "swap_chain_1"
 
@@ -85,3 +91,5 @@ public:
 	GLOBAL(void(int, int), rasterizer_set_display_size, "halo2.dll", 0x954dd0, "", 0);
 	GLOBAL(void(), rasterizer_deinitialize, "halo2.dll", 0x953030, "", 0);
 };
+
+PATCH("halo2.dll", 0x829050, "", draw_hud_layer, void);
