@@ -56,7 +56,7 @@ void DeltaModule::ResourcesInitialize()
 		return;
 	}
 
-	(ID3D11RenderTargetView*&)g_output_target = Test.RenderTargetView;
+	g_output_target() = Test.RenderTargetView;
 }
 
 void DeltaModule::Present()
@@ -93,6 +93,8 @@ bool DeltaModule::CreatePatches()
 	bSuccess |= rasterizer_present::Create();
 
 	bSuccess |= draw_hud_layer::Create();
+	bSuccess |= interface_draw_screen::Create();
+	bSuccess |= rasterizer_render_screen_flash::Create();
 
 	return bSuccess;
 }
@@ -106,6 +108,8 @@ bool DeltaModule::ApplyPatches()
 	bSuccess |= rasterizer_present::Enable();
 
 	bSuccess |= draw_hud_layer::Enable();
+	bSuccess |= interface_draw_screen::Enable();
+	bSuccess |= rasterizer_render_screen_flash::Enable();
 
 	return bSuccess;
 }
@@ -124,6 +128,9 @@ bool DeltaModule::FindGlobals()
 	bSuccess |= rasterizer_initialize.Find();
 	bSuccess |= rasterizer_set_display_size.Find();
 	bSuccess |= rasterizer_deinitialize.Find();
+	bSuccess |= player_window_index.Find();
+	bSuccess |= g_render_camera.Find();
+	bSuccess |= g_ui_bounds.Find();
 
 	return true;
 }
@@ -155,6 +162,14 @@ bool DeltaModule::PatchSplitscreen()
 	WriteBytes(calculate_viewport__top, {0x0});
 
 	//WriteBytes(render_hud, {0x90, 0x90, 0x90, 0x90, 0x90}); // nop render_hud
+	//WriteBytes(render_hud, {0x90, 0x90, 0x90, 0x90, 0x90}); // nop render_hud
+
+	//WriteBytes(unk_render, {0x90, 0x90, 0x90, 0x90, 0x90}); // fade?
+
+	//WriteBytes(unk_render, {0xc3}); // ret at start of func
+	//WriteBytes(unk_render2, {0xc3}); // ret at start of func
+
+	WriteBytes(interface_draw_screen__window_count, {0xB8, 0x01, 0x00, 0x00, 0x00});
 
 	return true;
 }
@@ -178,13 +193,12 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 void RenderTest::ResizeBuffers()
 {
 	DXGI_SWAP_CHAIN_DESC desc;
-	((IDXGISwapChain*)DeltaModule::Get().g_swap_chain)->GetDesc(&desc);
+	DeltaModule::Get().g_swap_chain()->GetDesc(&desc);
 	UINT bufferCount = desc.BufferCount;
 
 	FORERUNNER_LOG(Delta, "g_swap_chain: {}x{} ({})", desc.BufferDesc.Width, desc.BufferDesc.Height, desc.BufferCount);
 
-	// Free any existing references before performing the resize (TODO: there's probably a call that does this all when the window gets resized that can be borrowed)
-	DeltaModule::Get().rasterizer_deinitialize();
+	DeltaModule::Get().rasterizer_deinitialize()();
 	FORERUNNER_LOG(Delta, "Deinitializing rasterizer");
 
 	DeltaModule::Get().rasterizer_set_display_size(800, 600);
@@ -286,8 +300,8 @@ void RenderTest::Init()
 		bufferDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
 		bufferDesc.CPUAccessFlags = 0;
 		bufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-		bufferDesc.Width = 800;
-		bufferDesc.Height = 600;
+		bufferDesc.Width = UI_WIDTH;
+		bufferDesc.Height = UI_HEIGHT;
 		bufferDesc.MipLevels = 1;
 		bufferDesc.MiscFlags = 0;
 		bufferDesc.SampleDesc.Count = 1;
@@ -327,15 +341,9 @@ void RenderTest::Draw()
 
 	ID3D11Device* Device = DeltaModule::Get().GetDevice();
 	ID3D11DeviceContext* Context = DeltaModule::Get().GetDeviceContext();
-
-	ID3D11RenderTargetView* PrevTargetView;
-	ID3D11DepthStencilView* DepthStencilView;
-	
+		
 	const float clear_color_with_alpha[4] = {0.2f, 0.2f, 0.4f, 1.0f};
-	Context->OMGetRenderTargets(1, &PrevTargetView, &DepthStencilView);
-	Context->OMSetRenderTargets(1, &MirrorTargetView, nullptr);
 	Context->ClearRenderTargetView(MirrorTargetView, clear_color_with_alpha);
-	Context->OMSetRenderTargets(1, &PrevTargetView, DepthStencilView);
 
 	{
 		ID3D11Resource* srcResource = nullptr;
@@ -366,6 +374,14 @@ void RenderTest::Draw()
 		Context->CopySubresourceRegion(dstResource, 0, 0, 0, 0, srcTex, 0, &srcBox);
 
 
+		srcBox.left = 0;
+		srcBox.top = 0;
+		srcBox.front = 0;
+		srcBox.right = std::min(UI_WIDTH, dstDesc.Width);
+		srcBox.bottom = std::min(UI_HEIGHT, dstDesc.Height);
+		srcBox.back = 1;
+
+
 		Context->CopySubresourceRegion(dstResource, 0, 800, 0, 0, UITexture, 0, &srcBox);
 
 		srcTex->Release();
@@ -376,14 +392,7 @@ void RenderTest::Draw()
 
 	SwapChain->Present(0, 0);
 
-	if (PrevTargetView)
-	{
-		PrevTargetView->Release();
-	}
-	if (DepthStencilView)
-	{
-		DepthStencilView->Release();
-	}
+	Context->ClearRenderTargetView(UITargetView, clear_color_with_alpha);
 }
 
 void draw_hud_layer::Patch()
@@ -392,11 +401,72 @@ void draw_hud_layer::Patch()
 
 	DeltaModule::Get().GetOutputRenderTarget() = DeltaModule::Get().Test.UITargetView;
 
-	// set target to new RT
-	// set sizes here?
 	Original();
 
-	// restore target
 
 	DeltaModule::Get().GetOutputRenderTarget() = ActiveRenderTarget;
+}
+
+void interface_draw_screen::Patch()
+{
+	// Only draw hud for first eye
+	if (DeltaModule::Get().player_window_index != 0)
+	{
+		return;
+	}
+
+	rectangle2d OriginalViewBounds = g_render_camera().viewport_bounds;
+	rectangle2d OriginalWindowBounds = g_render_camera().window_bounds;
+
+	DeltaModule::Get().bRenderingHUD = true;
+
+	g_render_camera().viewport_bounds.x0 = 0;
+	g_render_camera().viewport_bounds.x1 = DeltaModule::Get().Test.UI_WIDTH;
+	g_render_camera().viewport_bounds.y0 = 0;
+	g_render_camera().viewport_bounds.y1 = DeltaModule::Get().Test.UI_HEIGHT;
+
+	g_render_camera().window_bounds.x0 = 0;
+	g_render_camera().window_bounds.x1 = DeltaModule::Get().Test.UI_WIDTH;
+	g_render_camera().window_bounds.y0 = 0;
+	g_render_camera().window_bounds.y1 = DeltaModule::Get().Test.UI_HEIGHT;
+
+	rectangle2d OriginalUIBounds = g_ui_bounds;
+
+	g_ui_bounds().x0 = 0;
+	g_ui_bounds().x1 = DeltaModule::Get().Test.UI_WIDTH;
+	g_ui_bounds().y0 = 0;
+	g_ui_bounds().y1 = DeltaModule::Get().Test.UI_HEIGHT;
+
+	Original();
+
+	g_render_camera().viewport_bounds = OriginalViewBounds;
+	g_render_camera().window_bounds = OriginalWindowBounds;
+	g_ui_bounds() = OriginalUIBounds;
+
+	DeltaModule::Get().bRenderingHUD = false;
+}
+
+void rasterizer_render_screen_flash::Patch()
+{
+	rectangle2d OriginalViewBounds = g_render_camera().viewport_bounds;
+	rectangle2d OriginalWindowBounds = g_render_camera().window_bounds;
+
+	DeltaModule::Get().bRenderingHUD = true;
+
+	g_render_camera().viewport_bounds.x0 = 0;
+	g_render_camera().viewport_bounds.x1 = DeltaModule::Get().Test.UI_WIDTH;
+	g_render_camera().viewport_bounds.y0 = 0;
+	g_render_camera().viewport_bounds.y1 = DeltaModule::Get().Test.UI_HEIGHT;
+
+	g_render_camera().window_bounds.x0 = 0;
+	g_render_camera().window_bounds.x1 = DeltaModule::Get().Test.UI_WIDTH;
+	g_render_camera().window_bounds.y0 = 0;
+	g_render_camera().window_bounds.y1 = DeltaModule::Get().Test.UI_HEIGHT;
+
+	Original();
+
+	g_render_camera().viewport_bounds = OriginalViewBounds;
+	g_render_camera().window_bounds = OriginalWindowBounds;
+
+	DeltaModule::Get().bRenderingHUD = false;
 }

@@ -14,6 +14,7 @@ FORERUNNER_CREATE_LOG_CATEGORY(Patch);
 // Function name, will be used as the class name of the patch
 // Return type
 // List of Function parameters
+// 
 // Ex:
 // .h:
 // PATCH("game.dll", 0xdeadbeef, "13 37 ?? ?? C0 DE", example_function, void, int param1, float param2)
@@ -67,6 +68,7 @@ protected: \
 // Expected RVA of the variable
 // Unique signature of a segment of code which references this variable
 // Offset from the start of the signature to find the RIP-relative address of the global variable
+// 
 // .Find() must be called on the returned Global once before it's value can be accessed
 // Ex:
 // .h:
@@ -78,7 +80,7 @@ protected: \
 // }
 // void Tick()
 // {
-//    (int[512])g_example_global[3] = 6;
+//    g_example_global()[3] = 6;
 // }
 // somewhere in the game's asm:
 // ab cd
@@ -86,7 +88,48 @@ protected: \
 // c0 de
 // da da
 #define GLOBAL(Type, Name, Module, ExpectedAddress, Signature, Offset) static inline Patch::Global<Type> Name = Patch::Global<Type>(Module, ExpectedAddress, Signature, Offset, #Name);
+// Define the location of a code fragment relative to a known pattern of bytes (signature)
+// First access to the offset will automatically locate it in memory, 
+// as it is assumed these will only be used during start up to patch functions directly
+// Arguments are:
+// Variable name used to access the memory address
+// Module the code is in
+// Expected RVA of the code
+// Unique signature of a segment of code close to the target address
+// Offset in bytes from the start of the signature to the target address
+// 
+// Ex:
+// .h:
+// OFFSET(draw_cinematic_bars, "game.dll", 0xdeadbeef, "AA BB CC DD ?? EE", +8);
+// .cpp
+// WriteBytes(draw_cinematic_bars, {0x90, 0x90, 0x90, 0x90, 0x90});
 #define OFFSET(Name, Module, ExpectedAddress, Signature, Offset) static inline Patch::MemoryAddress Name = Patch::MemoryAddress(Module, ExpectedAddress, Signature, Offset, #Name);
+// Define a function pointer to a function in the game's code, arguments are:
+// Module the function is in
+// Expected RVA of the function
+// Unique signature of code from within that function
+// Offset from the start of the signature to find the start of the function
+// Return type of the function
+// Function name
+// Arguments of the function
+// 
+// Ex:
+// .h
+// FUNCTION("game.dll", 0xdeadbeef, "AA BB CC DD", -4, bool game_is_player_valid, int player_id, int controller_id);
+// .cpp:
+// void Init()
+// {
+//     game_is_player_valid.Find();
+// }
+// 
+// void Tick()
+// {
+//     bool IsValid = game_is_player_valid(0, 1);
+// }
+// game source (probably):
+// bool game_is_player_valid(int player_id, int controller_id);
+//
+#define FUNCTION(Module, ExpectedAddress, Signature, Offset, ReturnType, FunctionName, ...) static inline Patch::Function<ReturnType(__VA_ARGS__)> FunctionName = Patch::Function<ReturnType(__VA_ARGS__)>(Module, ExpectedAddress, Signature, Offset, #FunctionName);
 
 namespace Patch
 {
@@ -98,11 +141,12 @@ namespace Patch
 	void SuspendThreads();
 	void ResumeThreads();
 
+
 	template<typename T>
-	class Global
+	class BaseMemoryPtr
 	{
 	public:
-		Global(const char* InModule, int64_t InRVA, const char* InSignature, int64_t InOffset, const char* InDebugName = nullptr)
+		BaseMemoryPtr(const char* InModule, int64_t InRVA, const char* InSignature, int64_t InOffset, const char* InDebugName = nullptr)
 			: Value(nullptr)
 			, Module(InModule)
 			, RVA(InRVA)
@@ -112,32 +156,64 @@ namespace Patch
 		{
 		}
 
-		operator T&()
+	protected:
+
+		void* SearchMemory(int64_t RVA)
 		{
-			return *Value;
+			return Patch::SearchSignature(this->Module, RVA, this->Signature, this->DebugName);
 		}
 
+		T* Value = nullptr;
+		const char* Module = nullptr;
+		int64_t RVA = 0;
+		const char* Signature = nullptr;
+		int64_t Offset = 0;
+		const char* DebugName = nullptr;
+	};
+
+	template<typename T>
+	class Global : public BaseMemoryPtr<T>
+	{
+	public:
+		Global(const char* InModule, int64_t InRVA, const char* InSignature, int64_t InOffset, const char* InDebugName = nullptr)
+			: BaseMemoryPtr<T>(InModule, InRVA, InSignature, InOffset, InDebugName)
+		{
+		}
+
+		// Automatically convert to value where possible
+		operator T&()
+		{
+			return *this->Value;
+		}
+
+		// Explicit conversion to value
+		T& operator()()
+		{
+			return *this->Value;
+		}
+
+		// Gets a pointer to the global variable, must be called before attempting to access the global
 		bool Find()
 		{
 			void* Address = 0;
 
 			// No signature, use the RVA
-			if (!Signature || strlen(Signature) == 0)
+			if (!this->Signature || strlen(this->Signature) == 0)
 			{
-				Address = Patch::SearchSignature(Module, RVA, Signature, DebugName);
+				Address = this->SearchMemory(this->RVA);
 				if (!Address)
 				{
 					return false;
 				}
 
 				// If using the RVA directly don't apply any offsets/dereferences
-				Value = reinterpret_cast<T*>(Address);
+				this->Value = reinterpret_cast<T*>(Address);
 
 				return true;
 			}
 
 			// Find the memory address of the code which points to this global
-			Address = Patch::SearchSignature(Module, 0, Signature, DebugName);
+			Address = this->SearchMemory(0);
 			if (!Address)
 			{
 				return false;
@@ -146,62 +222,69 @@ namespace Patch
 			// Code typically references globals in the form of mov REG,QWORD PTR [rip+OFFSET]
 			// To extract the absolute address from this we need to add the signed 32 bit offset to the 64 bit address of the RIP register
 			// RIP register will be pointing to the next instruction to be decoded, i.e. Address + 4
-			unsigned char* AdjustedAddress = reinterpret_cast<unsigned char*>(Address) + Offset;
+			unsigned char* AdjustedAddress = reinterpret_cast<unsigned char*>(Address) + this->Offset;
 			unsigned char* RIP = AdjustedAddress + 4;
 			int32_t RIPOffset = *reinterpret_cast<int32_t*>(AdjustedAddress);
 
-			Value = reinterpret_cast<T*>(RIP + RIPOffset);
+			this->Value = reinterpret_cast<T*>(RIP + RIPOffset);
 
 			return true;
 		}
-	protected:
-		T* Value = nullptr;
-		const char* Module = nullptr;
-		int64_t RVA = 0;
-		const char* Signature = nullptr;
-		int64_t Offset = 0;
-		const char* DebugName = nullptr;
-
 	};
 
-	class MemoryAddress
+	class MemoryAddress : public BaseMemoryPtr<void>
 	{
 	public:
 		MemoryAddress(const char* InModule, int64_t InRVA, const char* InSignature, int64_t InOffset, const char* InDebugName = nullptr)
-			: Address(nullptr)
-			, Module(InModule)
-			, RVA(InRVA)
-			, Signature(InSignature)
-			, Offset(InOffset)
-			, DebugName(InDebugName)
+			: BaseMemoryPtr<void>(InModule, InRVA, InSignature, InOffset, InDebugName)
 		{
 		}
 
 		operator void* ()
 		{
-			// Return existing address if already located
-			if (Address)
-			{
-				return Address;
-			}
-
 			// First call (or previous call failed), look up address
-			Address = Patch::SearchSignature(Module, RVA - Offset, Signature, DebugName);
-			if (Address)
+			if (!this->Value)
 			{
-				// Apply offset to found address, since SearchSignature only finds the start of the signature
-				Address = reinterpret_cast<void*>(reinterpret_cast<unsigned char*>(Address) + Offset);
+				void* Address = this->SearchMemory(this->RVA - this->Offset);
+				if (Address)
+				{
+					// Apply offset to found address, since SearchSignature only finds the start of the signature
+					this->Value = reinterpret_cast<void*>(reinterpret_cast<unsigned char*>(Address) + this->Offset);
+				}
 			}
 
-			return Address;
+			return this->Value;
+		}
+	};
+
+	template<typename T>
+	class Function : public BaseMemoryPtr<T>
+	{
+	public:
+		Function(const char* InModule, int64_t InRVA, const char* InSignature, int64_t InOffset, const char* InDebugName = nullptr)
+			: BaseMemoryPtr<T>(InModule, InRVA, InSignature, InOffset, InDebugName)
+		{
 		}
 
-	protected:
-		void* Address = nullptr;
-		const char* Module = nullptr;
-		int64_t RVA = 0;
-		const char* Signature = nullptr;
-		int64_t Offset = 0;
-		const char* DebugName = nullptr;
+		// Automatically convert to value where possible
+		operator T& ()
+		{
+			return *this->Value;
+		}
+
+		// Gets a pointer to the global variable, must be called before attempting to invoke the function
+		bool Find()
+		{
+			void* Address = this->SearchMemory(this->RVA - this->Offset);
+			if (!Address)
+			{
+				return false;
+			}
+
+			// Apply offset to found address, since SearchSignature only finds the start of the signature
+			this->Value = reinterpret_cast<T*>(reinterpret_cast<unsigned char*>(Address) + this->Offset);
+			
+			return true;
+		}
 	};
 }
