@@ -130,6 +130,9 @@ protected: \
 // bool game_is_player_valid(int player_id, int controller_id);
 //
 #define FUNCTION(Module, ExpectedAddress, Signature, Offset, ReturnType, FunctionName, ...) inline Patch::Function<ReturnType(__VA_ARGS__)> FunctionName = Patch::Function<ReturnType(__VA_ARGS__)>(Module, ExpectedAddress, Signature, Offset, #FunctionName);
+// Same as function, only the signature + offset is for a call to this function, rather than the function itself
+// (This is sometimes necessary if the target function is too small to uniquely identify via a signature)
+#define FUNCTION_CALL(Module, ExpectedAddress, Signature, Offset, ReturnType, FunctionName, ...) inline Patch::FunctionFromCall<ReturnType(__VA_ARGS__)> FunctionName = Patch::FunctionFromCall<ReturnType(__VA_ARGS__)>(Module, ExpectedAddress, Signature, Offset, #FunctionName);
 
 namespace Patch
 {
@@ -161,6 +164,40 @@ namespace Patch
 		void* SearchMemory(int64_t RVA)
 		{
 			return Patch::SearchSignature(this->Module, RVA, this->Signature, this->DebugName);
+		}
+
+		void* SearchRipRelative()
+		{
+			void* Address = 0;
+
+			// No signature, use the RVA
+			if (!this->Signature || strlen(this->Signature) == 0)
+			{
+				Address = this->SearchMemory(this->RVA);
+				if (!Address)
+				{
+					return 0;
+				}
+
+				// If using the RVA directly don't apply any offsets/dereferences
+				return reinterpret_cast<void*>(Address);
+			}
+
+			// Find the memory address of the code which points to this global
+			Address = this->SearchMemory(0);
+			if (!Address)
+			{
+				return 0;
+			}
+
+			// Code typically references globals in the form of mov REG,QWORD PTR [rip+OFFSET]
+			// To extract the absolute address from this we need to add the signed 32 bit offset to the 64 bit address of the RIP register
+			// RIP register will be pointing to the next instruction to be decoded, i.e. Address + 4
+			unsigned char* AdjustedAddress = reinterpret_cast<unsigned char*>(Address) + this->Offset;
+			unsigned char* RIP = AdjustedAddress + 4;
+			int32_t RIPOffset = *reinterpret_cast<int32_t*>(AdjustedAddress);
+
+			return reinterpret_cast<void*>(RIP + RIPOffset);
 		}
 
 		T* Value = nullptr;
@@ -195,40 +232,9 @@ namespace Patch
 		// Gets a pointer to the global variable, must be called before attempting to access the global
 		bool Find()
 		{
-			void* Address = 0;
+			this->Value = reinterpret_cast<T*>(this->SearchRipRelative());
 
-			// No signature, use the RVA
-			if (!this->Signature || strlen(this->Signature) == 0)
-			{
-				Address = this->SearchMemory(this->RVA);
-				if (!Address)
-				{
-					return false;
-				}
-
-				// If using the RVA directly don't apply any offsets/dereferences
-				this->Value = reinterpret_cast<T*>(Address);
-
-				return true;
-			}
-
-			// Find the memory address of the code which points to this global
-			Address = this->SearchMemory(0);
-			if (!Address)
-			{
-				return false;
-			}
-
-			// Code typically references globals in the form of mov REG,QWORD PTR [rip+OFFSET]
-			// To extract the absolute address from this we need to add the signed 32 bit offset to the 64 bit address of the RIP register
-			// RIP register will be pointing to the next instruction to be decoded, i.e. Address + 4
-			unsigned char* AdjustedAddress = reinterpret_cast<unsigned char*>(Address) + this->Offset;
-			unsigned char* RIP = AdjustedAddress + 4;
-			int32_t RIPOffset = *reinterpret_cast<int32_t*>(AdjustedAddress);
-
-			this->Value = reinterpret_cast<T*>(RIP + RIPOffset);
-
-			return true;
+			return this->Value != nullptr;
 		}
 	};
 
@@ -285,6 +291,30 @@ namespace Patch
 			this->Value = reinterpret_cast<T*>(reinterpret_cast<unsigned char*>(Address) + this->Offset);
 			
 			return true;
+		}
+	};
+
+	template<typename T>
+	class FunctionFromCall : public BaseMemoryPtr<T>
+	{
+	public:
+		FunctionFromCall(const char* InModule, int64_t InRVA, const char* InSignature, int64_t InOffset, const char* InDebugName = nullptr)
+			: BaseMemoryPtr<T>(InModule, InRVA, InSignature, InOffset, InDebugName)
+		{
+		}
+
+		// Automatically convert to value where possible
+		operator T& ()
+		{
+			return *this->Value;
+		}
+
+		// Gets a pointer to the global variable, must be called before attempting to invoke the function
+		bool Find()
+		{
+			this->Value = reinterpret_cast<T*>(this->SearchRipRelative());
+
+			return this->Value != nullptr;
 		}
 	};
 }
