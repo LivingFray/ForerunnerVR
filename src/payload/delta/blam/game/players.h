@@ -1,5 +1,6 @@
 #pragma once
-#include "blam/memory/data.h"
+#include "payload/delta/blam/memory/data.h"
+#include "payload/forerunner/patch.h"
 
 struct players_globals
 {
@@ -17,3 +18,5 @@ struct players_globals
 static_assert(sizeof(players_globals) == 0x15c);
 
 GLOBAL(players_globals*, g_players_globals, "halo2.dll", 0xe80a20, "41 b8 40 04 00 00 48 8d 0d ?? ?? ?? ?? 48 8b d8 e8 ?? ?? ?? ?? 33 c9 66 89 4b 08", +30);
+
+PATCH("halo2.dll", 0x6a4380, "48 8b 05 ?? ?? ?? ?? 0f bf 40 08 c3", players_get_window_count, int);

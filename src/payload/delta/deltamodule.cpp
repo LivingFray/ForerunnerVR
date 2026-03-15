@@ -1,12 +1,11 @@
 #include "deltamodule.h"
 #include "common/utils/inject.h"
-#include "patches/render/update_player_view_frustum.h"
-#include "patches/render/draw_splitscreen_borders.h"
-#include "patches/render/get_player_window_count.h"
-#include "patches/render/rasterizer_present.h"
-#include "payload/delta/blam/render/render.h"
-#include "payload/delta/blam/rasterizer/rasterizer_main.h"
+
+#include "payload/delta/blam/game/players.h"
 #include "payload/delta/blam/interface/interface.h"
+#include "payload/delta/blam/main/main_render.h"
+#include "payload/delta/blam/rasterizer/rasterizer_main.h"
+#include "payload/delta/blam/render/render.h"
 #include <d3d11.h>
 #include <dxgi1_2.h>
 
@@ -70,11 +69,11 @@ void DeltaModule::Present()
 bool DeltaModule::CreatePatches()
 {
 	bool bSuccess = true;
-	bSuccess |= update_player_view_frustum::Create();
-	bSuccess |= draw_splitscreen_borders::Create();
-	bSuccess |= get_player_window_count::Create();
+	bSuccess |= compute_window_bounds::Create();
+	bSuccess |= players_get_window_count::Create();
 	bSuccess |= rasterizer_present::Create();
 	bSuccess |= interface_draw_screen::Create();
+	bSuccess |= interface_draw_splitscreen_borders::Create();
 
 	return bSuccess;
 }
@@ -82,11 +81,11 @@ bool DeltaModule::CreatePatches()
 bool DeltaModule::ApplyPatches()
 {
 	bool bSuccess = true;
-	bSuccess |= update_player_view_frustum::Enable();
-	bSuccess |= draw_splitscreen_borders::Enable();
-	bSuccess |= get_player_window_count::Enable();
+	bSuccess |= compute_window_bounds::Enable();
+	bSuccess |= players_get_window_count::Enable();
 	bSuccess |= rasterizer_present::Enable();
 	bSuccess |= interface_draw_screen::Enable();
+	bSuccess |= interface_draw_splitscreen_borders::Enable();
 
 	return bSuccess;
 }

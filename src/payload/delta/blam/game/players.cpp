@@ -1,7 +1,7 @@
-#include "get_player_window_count.h"
+#include "players.h"
 #include "payload/delta/deltamodule.h"
 
-int get_player_window_count::Patch()
+int players_get_window_count::Patch()
 {
 	return DeltaModule::Get().bRenderingHUD ? 1 : 2;
 }

@@ -50,3 +50,9 @@ void interface_draw_screen::Patch()
 
 	DeltaModule::Get().bRenderingHUD = false;
 }
+
+void interface_draw_splitscreen_borders::Patch()
+{
+	// Do nothing, we don't want any borders for splitscreen
+	return;
+}
