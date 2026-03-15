@@ -5,6 +5,8 @@
 #include "patches/render/get_player_window_count.h"
 #include "patches/render/rasterizer_present.h"
 #include "payload/delta/blam/render/render.h"
+#include "payload/delta/blam/rasterizer/rasterizer_main.h"
+#include "payload/delta/blam/interface/interface.h"
 #include <d3d11.h>
 #include <dxgi1_2.h>
 
@@ -65,26 +67,6 @@ void DeltaModule::Present()
 	Test.Draw();
 }
 
-ID3D11Device* DeltaModule::GetDevice()
-{
-	return g_device;
-}
-
-ID3D11DeviceContext* DeltaModule::GetDeviceContext()
-{
-	return g_device_context;
-}
-
-ID3D11RenderTargetView*& DeltaModule::GetOutputRenderTarget()
-{
-	return g_output_target;
-}
-
-rasterizer_globals& DeltaModule::GetRasterizerGlobals()
-{
-	return g_rasterizer_globals;
-}
-
 bool DeltaModule::CreatePatches()
 {
 	bool bSuccess = true;
@@ -92,10 +74,7 @@ bool DeltaModule::CreatePatches()
 	bSuccess |= draw_splitscreen_borders::Create();
 	bSuccess |= get_player_window_count::Create();
 	bSuccess |= rasterizer_present::Create();
-
-	bSuccess |= draw_hud_layer::Create();
 	bSuccess |= interface_draw_screen::Create();
-	bSuccess |= rasterizer_render_screen_flash::Create();
 
 	return bSuccess;
 }
@@ -107,10 +86,7 @@ bool DeltaModule::ApplyPatches()
 	bSuccess |= draw_splitscreen_borders::Enable();
 	bSuccess |= get_player_window_count::Enable();
 	bSuccess |= rasterizer_present::Enable();
-
-	bSuccess |= draw_hud_layer::Enable();
 	bSuccess |= interface_draw_screen::Enable();
-	bSuccess |= rasterizer_render_screen_flash::Enable();
 
 	return bSuccess;
 }
@@ -162,16 +138,6 @@ bool DeltaModule::PatchSplitscreen()
 	WriteBytes(calculate_viewport__bottom, {0x0});
 	WriteBytes(calculate_viewport__top, {0x0});
 
-	//WriteBytes(render_hud, {0x90, 0x90, 0x90, 0x90, 0x90}); // nop render_hud
-	//WriteBytes(render_hud, {0x90, 0x90, 0x90, 0x90, 0x90}); // nop render_hud
-
-	//WriteBytes(unk_render, {0x90, 0x90, 0x90, 0x90, 0x90}); // fade?
-
-	//WriteBytes(unk_render, {0xc3}); // ret at start of func
-	//WriteBytes(unk_render2, {0xc3}); // ret at start of func
-
-	WriteBytes(interface_draw_screen__window_count, {0xB8, 0x01, 0x00, 0x00, 0x00});
-
 	return true;
 }
 
@@ -194,22 +160,22 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 void RenderTest::ResizeBuffers()
 {
 	DXGI_SWAP_CHAIN_DESC desc;
-	DeltaModule::Get().g_swap_chain()->GetDesc(&desc);
+	g_swap_chain()->GetDesc(&desc);
 	UINT bufferCount = desc.BufferCount;
 
 	FORERUNNER_LOG(Delta, "g_swap_chain: {}x{} ({})", desc.BufferDesc.Width, desc.BufferDesc.Height, desc.BufferCount);
 
-	DeltaModule::Get().rasterizer_deinitialize()();
+	rasterizer_deinitialize();
 	FORERUNNER_LOG(Delta, "Deinitializing rasterizer");
 
-	DeltaModule::Get().rasterizer_set_display_size(800, 600);
+	rasterizer_set_display_size(800, 600);
 	FORERUNNER_LOG(Delta, "Setting rasterizer display size");
 
-	DeltaModule::Get().rasterizer_initialize();
-	FORERUNNER_LOG(Delta, "Deinitializing rasterizer");
+	rasterizer_initialize();
+	FORERUNNER_LOG(Delta, "Initializing rasterizer");
 
-	MirrorTargetView = DeltaModule::Get().GetOutputRenderTarget();
-	DeltaModule::Get().GetOutputRenderTarget() = RenderTargetView;
+	MirrorTargetView = g_output_target();
+	g_output_target() = RenderTargetView;
 }
 
 void RenderTest::Init()
@@ -239,15 +205,15 @@ void RenderTest::Init()
 	FORERUNNER_LOG(Delta, "Created window");
 
 	// Create swapchain for new window
-	ID3D11Device* Device = DeltaModule::Get().GetDevice();
-	ID3D11DeviceContext* Context = DeltaModule::Get().GetDeviceContext();
+	ID3D11Device* Device = g_device();
+	ID3D11DeviceContext* Context = g_device_context();
 
 	FORERUNNER_LOG(Delta, "Waiting on DX11");
 	while (!Device)
 	{
 		Sleep(20);
-		Device = DeltaModule::Get().GetDevice();
-		Context = DeltaModule::Get().GetDeviceContext();
+		Device = g_device();
+		Context = g_device_context();
 	}
 
 	FORERUNNER_LOG(Delta, "Got device and context ({:#08x} + {:#08x})", reinterpret_cast<int64_t>(Device), reinterpret_cast<int64_t>(Context));
@@ -321,16 +287,10 @@ void RenderTest::Init()
 
 void RenderTest::Draw()
 {
-	//FORERUNNER_LOG(Delta, "Render Draw");
 	if (!NewWindow)
 	{
 		Init();
 		ResizeBuffers();
-
-		rasterizer_globals& globals = DeltaModule::Get().GetRasterizerGlobals();
-
-		FORERUNNER_LOG(Delta, "Frame: {} {} {} {} | screen: {} {} {} {}", globals.frame_bounds.x0, globals.frame_bounds.x1, globals.frame_bounds.y0, globals.frame_bounds.y1,
-			globals.screen_bounds.x0, globals.screen_bounds.x1, globals.screen_bounds.y0, globals.screen_bounds.y1);
 	}
 
 	MSG Message{};
@@ -340,8 +300,8 @@ void RenderTest::Draw()
 		DispatchMessage(&Message);
 	}
 
-	ID3D11Device* Device = DeltaModule::Get().GetDevice();
-	ID3D11DeviceContext* Context = DeltaModule::Get().GetDeviceContext();
+	ID3D11Device* Device = g_device();
+	ID3D11DeviceContext* Context = g_device_context();
 		
 	const float clear_color_with_alpha[4] = {0.2f, 0.2f, 0.4f, 1.0f};
 	Context->ClearRenderTargetView(MirrorTargetView, clear_color_with_alpha);
@@ -394,80 +354,4 @@ void RenderTest::Draw()
 	SwapChain->Present(0, 0);
 
 	Context->ClearRenderTargetView(UITargetView, clear_color_with_alpha);
-}
-
-void draw_hud_layer::Patch()
-{
-	ID3D11RenderTargetView* ActiveRenderTarget = DeltaModule::Get().GetOutputRenderTarget();
-
-	DeltaModule::Get().GetOutputRenderTarget() = DeltaModule::Get().Test.UITargetView;
-
-	Original();
-
-
-	DeltaModule::Get().GetOutputRenderTarget() = ActiveRenderTarget;
-}
-
-void interface_draw_screen::Patch()
-{
-	// Only draw hud for first eye
-	if (DeltaModule::Get().player_window_index != 0)
-	{
-		return;
-	}
-
-	rectangle2d OriginalViewBounds = g_render_camera().viewport_bounds;
-	rectangle2d OriginalWindowBounds = g_render_camera().window_bounds;
-
-	DeltaModule::Get().bRenderingHUD = true;
-
-	g_render_camera().viewport_bounds.x0 = 0;
-	g_render_camera().viewport_bounds.x1 = DeltaModule::Get().Test.UI_WIDTH;
-	g_render_camera().viewport_bounds.y0 = 0;
-	g_render_camera().viewport_bounds.y1 = DeltaModule::Get().Test.UI_HEIGHT;
-
-	g_render_camera().window_bounds.x0 = 0;
-	g_render_camera().window_bounds.x1 = DeltaModule::Get().Test.UI_WIDTH;
-	g_render_camera().window_bounds.y0 = 0;
-	g_render_camera().window_bounds.y1 = DeltaModule::Get().Test.UI_HEIGHT;
-
-	rectangle2d OriginalUIBounds = global_window_parameters().camera.viewport_bounds;
-
-	global_window_parameters().camera.viewport_bounds.x0 = 0;
-	global_window_parameters().camera.viewport_bounds.x1 = DeltaModule::Get().Test.UI_WIDTH;
-	global_window_parameters().camera.viewport_bounds.y0 = 0;
-	global_window_parameters().camera.viewport_bounds.y1 = DeltaModule::Get().Test.UI_HEIGHT;
-
-	Original();
-
-	g_render_camera().viewport_bounds = OriginalViewBounds;
-	g_render_camera().window_bounds = OriginalWindowBounds;
-	global_window_parameters().camera.viewport_bounds = OriginalUIBounds;
-
-	DeltaModule::Get().bRenderingHUD = false;
-}
-
-void rasterizer_render_screen_flash::Patch()
-{
-	rectangle2d OriginalViewBounds = g_render_camera().viewport_bounds;
-	rectangle2d OriginalWindowBounds = g_render_camera().window_bounds;
-
-	DeltaModule::Get().bRenderingHUD = true;
-
-	g_render_camera().viewport_bounds.x0 = 0;
-	g_render_camera().viewport_bounds.x1 = DeltaModule::Get().Test.UI_WIDTH;
-	g_render_camera().viewport_bounds.y0 = 0;
-	g_render_camera().viewport_bounds.y1 = DeltaModule::Get().Test.UI_HEIGHT;
-
-	g_render_camera().window_bounds.x0 = 0;
-	g_render_camera().window_bounds.x1 = DeltaModule::Get().Test.UI_WIDTH;
-	g_render_camera().window_bounds.y0 = 0;
-	g_render_camera().window_bounds.y1 = DeltaModule::Get().Test.UI_HEIGHT;
-
-	Original();
-
-	g_render_camera().viewport_bounds = OriginalViewBounds;
-	g_render_camera().window_bounds = OriginalWindowBounds;
-
-	DeltaModule::Get().bRenderingHUD = false;
 }

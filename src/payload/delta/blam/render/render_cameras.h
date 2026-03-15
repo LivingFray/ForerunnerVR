@@ -44,3 +44,7 @@ struct render_projection
 	real_vector2d scale;
 };
 static_assert(sizeof(render_projection) == 0xc0);
+
+GLOBAL(render_camera, g_render_camera, "halo2.dll", 0x165c260, "0f 11 41 e0 0f 10 48 f0 0f 11 49 f0 48 83 ea 01 75 ?? 0f 10 00 4c 8d 05 ?? ?? ?? ?? 0f 11 01 0f 10 48 10 0f 11 49 10 88 15 ?? ?? ?? ?? 48 8d 0d ?? ?? ?? ??", +48);
+
+GLOBAL(int, player_window_index, "halo2.dll", 0x165c394, "48 89 5c 24 30 48 8d 1d ?? ?? ?? ?? 48 03 cb e8 ?? ?? ?? ?? 48 63 05 ?? ?? ?? ?? 48 8d 8b c0 01 00 00 4c 69 c0 18 03 00 00 ba 02 00 00 00 49 03 c8 41 0f bf 04 18 89 05", +56);

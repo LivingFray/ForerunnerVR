@@ -1,0 +1,4 @@
+#pragma once
+#include "payload/forerunner/patch.h"
+
+PATCH("halo2.dll", 0x822190, "48 83 ec 28 80 3d ?? ?? ?? ?? 00 48 89 5c 24 30 48 89 74 24 40 75 ?? f3 0f 10 15 ?? ?? ?? ?? f3 0f 10 0d ?? ?? ?? ?? 0f 28 c2", interface_draw_screen, void);

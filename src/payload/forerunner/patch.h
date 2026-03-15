@@ -87,7 +87,7 @@ protected: \
 // 13 37 [0x1234] // <-Signature start + 3 bytes = 0x1234, the offset from the RIP of the global
 // c0 de
 // da da
-#define GLOBAL(Type, Name, Module, ExpectedAddress, Signature, Offset) static inline Patch::Global<Type> Name = Patch::Global<Type>(Module, ExpectedAddress, Signature, Offset, #Name);
+#define GLOBAL(Type, Name, Module, ExpectedAddress, Signature, Offset) inline Patch::Global<Type> Name = Patch::Global<Type>(Module, ExpectedAddress, Signature, Offset, #Name);
 // Define the location of a code fragment relative to a known pattern of bytes (signature)
 // First access to the offset will automatically locate it in memory, 
 // as it is assumed these will only be used during start up to patch functions directly
@@ -103,7 +103,7 @@ protected: \
 // OFFSET(draw_cinematic_bars, "game.dll", 0xdeadbeef, "AA BB CC DD ?? EE", +8);
 // .cpp
 // WriteBytes(draw_cinematic_bars, {0x90, 0x90, 0x90, 0x90, 0x90});
-#define OFFSET(Name, Module, ExpectedAddress, Signature, Offset) static inline Patch::MemoryAddress Name = Patch::MemoryAddress(Module, ExpectedAddress, Signature, Offset, #Name);
+#define OFFSET(Name, Module, ExpectedAddress, Signature, Offset) inline Patch::MemoryAddress Name = Patch::MemoryAddress(Module, ExpectedAddress, Signature, Offset, #Name);
 // Define a function pointer to a function in the game's code, arguments are:
 // Module the function is in
 // Expected RVA of the function
@@ -129,7 +129,7 @@ protected: \
 // game source (probably):
 // bool game_is_player_valid(int player_id, int controller_id);
 //
-#define FUNCTION(Module, ExpectedAddress, Signature, Offset, ReturnType, FunctionName, ...) static inline Patch::Function<ReturnType(__VA_ARGS__)> FunctionName = Patch::Function<ReturnType(__VA_ARGS__)>(Module, ExpectedAddress, Signature, Offset, #FunctionName);
+#define FUNCTION(Module, ExpectedAddress, Signature, Offset, ReturnType, FunctionName, ...) inline Patch::Function<ReturnType(__VA_ARGS__)> FunctionName = Patch::Function<ReturnType(__VA_ARGS__)>(Module, ExpectedAddress, Signature, Offset, #FunctionName);
 
 namespace Patch
 {

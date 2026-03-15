@@ -3,6 +3,7 @@
 #include "payload/delta/blam/render/render_cameras.h"
 #include "payload/delta/blam/scenario/scenario_fog.h"
 #include "payload/delta/blam/effects/player_effects.h"
+#include "payload/forerunner/patch.h"
 
 struct render_window
 {
@@ -81,3 +82,10 @@ static_assert(sizeof(window_parameters) == 0x318);
 
 // Accessed in rasterizer_window_state_apply, which is called by rasterizer_window_begin + rasterizer_window_end
 GLOBAL(window_parameters, global_window_parameters, "halo2.dll", 0x1996a10, "48 89 74 24 10 57 48 83 ec 20 48 8b f9 48 8d 15 ?? ?? ?? ?? 48 8b c1 b9 06 00 00 00 0f 1f 40 00 48 8d 92 80 00 00 00", +16);
+
+static inline const char* Signature_d3d11_devices = "48 8b 0d ?? ?? ?? ?? 48 85 c9 74 ?? 48 8b 01 ff 90 70 03 00 00 48 8b 0d ?? ?? ?? ?? 48 8b 01 ff 90 78 03 00 00 48 8b 0d ?? ?? ?? ?? 48 8b 15 ?? ?? ?? ?? 33 db 48 85 d2 74 ?? 48 8b 02 48 8b ca ff 50 10";
+
+GLOBAL(struct ID3D11Device*, g_device, "halo2.dll", 0x197ed68, Signature_d3d11_devices, +137);
+GLOBAL(struct ID3D11DeviceContext*, g_device_context, "halo2.dll", 0x197ed70, Signature_d3d11_devices, +3);
+GLOBAL(struct IDXGISwapChain*, g_swap_chain, "halo2.dll", 0x197ee48, Signature_d3d11_devices, +77);
+GLOBAL(struct ID3D11RenderTargetView*, g_output_target, "halo2.dll", 0x197ee58, "48 8b 05 ?? ?? ?? ?? 48 85 c0 74 ?? 48 8b 0d ?? ?? ?? ?? ff d0 48 8b 0d ?? ?? ?? ?? 48 85 c9 74 ?? 48 8b 01 ff 50 10 48 89 1d ?? ?? ?? ?? 48 83 c4 20 5b c3", +15);

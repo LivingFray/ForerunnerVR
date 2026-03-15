@@ -1,0 +1,8 @@
+#pragma once
+#include "payload/forerunner/patch.h"
+
+FUNCTION("halo2.dll", 0x953050, "48 83 ec 28 e8 ?? ?? ?? ?? 84 c0 74 ?? e8 ?? ?? ?? ?? 84 c0 74 ?? e8 ?? ?? ?? ?? 84 c0", 0, void, rasterizer_initialize);
+FUNCTION("halo2.dll", 0x954dd0, "48 89 5c 24 08 57 48 83 ec 40 f3 0f 10 1d ?? ?? ?? ?? 8b da 33 d2 8b f9 38 15 ?? ?? ?? ?? 44 0f b7 c2 74 ?? f3 0f 10 15", 0, void, rasterizer_set_display_size, int, int);
+FUNCTION("halo2.dll", 0x953030, "", 0, void, rasterizer_deinitialize);
+// RVA suggests this should be kept in another file, leaving it here for now until a better location presents itself
+FUNCTION("halo2.dll", 0x37ed0, "48 83 ec 78 80 3d ?? ?? ?? ?? 00 74 37 48 83 3d ?? ?? ?? ?? 00 74 ?? e8", 0, void, rasterizer_refresh);
