@@ -34,3 +34,13 @@ struct render_camera
 	float safe_area_scale_y;
 };
 static_assert(sizeof(render_camera) == 0x74);
+
+struct render_projection
+{
+	real_matrix4x3 world_to_view;
+	real_matrix4x3 view_to_world;
+	real_rectangle2d projection_bounds;
+	real_matrix4x4 projection_matrix;
+	real_vector2d scale;
+};
+static_assert(sizeof(render_projection) == 0xc0);

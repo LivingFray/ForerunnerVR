@@ -1,7 +1,8 @@
+#pragma once
 
-struct identifier
+struct datum
 {
 	short id;
 	short salt;
 };
-static_assert(sizeof(identifier) == 0x4);
+static_assert(sizeof(datum) == 0x4);

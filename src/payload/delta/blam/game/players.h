@@ -10,8 +10,8 @@ struct players_globals
 	bool movement_disabled;
 	short player_user_count;
 	short player_controller_count;
-	identifier player_ids[4];
-	identifier player_objects[4];
+	datum player_ids[4];
+	datum player_objects[4];
 	uint8_t unk2[304];
 };
 static_assert(sizeof(players_globals) == 0x15c);

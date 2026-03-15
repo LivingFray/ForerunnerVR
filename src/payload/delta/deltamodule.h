@@ -112,5 +112,3 @@ PATCH("halo2.dll", 0x822190, "", interface_draw_screen, void);
 PATCH("halo2.dll", 0x973620, "", rasterizer_render_screen_flash, void);
 
 GLOBAL(render_camera, g_render_camera, "halo2.dll", 0x165c260, "", 0);
-
-GLOBAL(struct rectangle2d, g_ui_bounds, "halo2.dll", 0x1996a58, "", 0);

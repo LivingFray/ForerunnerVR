@@ -1,6 +1,8 @@
 #pragma once
 #include <cstdint>
 #include "payload/delta/blam/render/render_cameras.h"
+#include "payload/delta/blam/scenario/scenario_fog.h"
+#include "payload/delta/blam/effects/player_effects.h"
 
 struct render_window
 {
@@ -55,3 +57,27 @@ struct render_window
 	uint8_t field48_0x11f;
 };
 static_assert(sizeof(render_window) == 0x120);
+
+
+struct window_parameters
+{
+	short unk0;
+	short unk1;
+	uint8_t unk2[4];
+	short unk3;
+	uint8_t unk4[2];
+	real_rgb_color clear_color;
+	render_camera camera;
+	short window_bound_index;
+	uint8_t unk5[114];
+	render_projection projection;
+	scenario_fog fog;
+	bool unk6;
+	uint8_t unk7[3];
+	effects_screen_flash screen_flash;
+	uint8_t unk8[28];
+};
+static_assert(sizeof(window_parameters) == 0x318);
+
+// Accessed in rasterizer_window_state_apply, which is called by rasterizer_window_begin + rasterizer_window_end
+GLOBAL(window_parameters, global_window_parameters, "halo2.dll", 0x1996a10, "48 89 74 24 10 57 48 83 ec 20 48 8b f9 48 8d 15 ?? ?? ?? ?? 48 8b c1 b9 06 00 00 00 0f 1f 40 00 48 8d 92 80 00 00 00", +16);

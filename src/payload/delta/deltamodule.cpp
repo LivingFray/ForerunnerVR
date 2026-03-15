@@ -4,6 +4,7 @@
 #include "patches/render/draw_splitscreen_borders.h"
 #include "patches/render/get_player_window_count.h"
 #include "patches/render/rasterizer_present.h"
+#include "payload/delta/blam/render/render.h"
 #include <d3d11.h>
 #include <dxgi1_2.h>
 
@@ -130,9 +131,9 @@ bool DeltaModule::FindGlobals()
 	bSuccess |= rasterizer_deinitialize.Find();
 	bSuccess |= player_window_index.Find();
 	bSuccess |= g_render_camera.Find();
-	bSuccess |= g_ui_bounds.Find();
+	bSuccess |= global_window_parameters.Find();
 
-	return true;
+	return bSuccess;
 }
 
 bool DeltaModule::PatchCode()
@@ -430,18 +431,18 @@ void interface_draw_screen::Patch()
 	g_render_camera().window_bounds.y0 = 0;
 	g_render_camera().window_bounds.y1 = DeltaModule::Get().Test.UI_HEIGHT;
 
-	rectangle2d OriginalUIBounds = g_ui_bounds;
+	rectangle2d OriginalUIBounds = global_window_parameters().camera.viewport_bounds;
 
-	g_ui_bounds().x0 = 0;
-	g_ui_bounds().x1 = DeltaModule::Get().Test.UI_WIDTH;
-	g_ui_bounds().y0 = 0;
-	g_ui_bounds().y1 = DeltaModule::Get().Test.UI_HEIGHT;
+	global_window_parameters().camera.viewport_bounds.x0 = 0;
+	global_window_parameters().camera.viewport_bounds.x1 = DeltaModule::Get().Test.UI_WIDTH;
+	global_window_parameters().camera.viewport_bounds.y0 = 0;
+	global_window_parameters().camera.viewport_bounds.y1 = DeltaModule::Get().Test.UI_HEIGHT;
 
 	Original();
 
 	g_render_camera().viewport_bounds = OriginalViewBounds;
 	g_render_camera().window_bounds = OriginalWindowBounds;
-	g_ui_bounds() = OriginalUIBounds;
+	global_window_parameters().camera.viewport_bounds = OriginalUIBounds;
 
 	DeltaModule::Get().bRenderingHUD = false;
 }
