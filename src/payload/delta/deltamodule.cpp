@@ -98,6 +98,7 @@ bool DeltaModule::FindGlobals()
 	bSuccess |= g_device.Find();
 	bSuccess |= g_device_context.Find();
 	bSuccess |= g_output_target.Find();
+	bSuccess |= g_output_depth_stencil_view.Find();
 	bSuccess |= g_rasterizer_globals.Find();
 	bSuccess |= g_swap_chain.Find();
 	bSuccess |= rasterizer_refresh.Find();

@@ -89,3 +89,4 @@ GLOBAL(struct ID3D11Device*, g_device, "halo2.dll", 0x197ed68, Signature_d3d11_d
 GLOBAL(struct ID3D11DeviceContext*, g_device_context, "halo2.dll", 0x197ed70, Signature_d3d11_devices, +3);
 GLOBAL(struct IDXGISwapChain*, g_swap_chain, "halo2.dll", 0x197ee48, Signature_d3d11_devices, +77);
 GLOBAL(struct ID3D11RenderTargetView*, g_output_target, "halo2.dll", 0x197ee58, "48 8b 05 ?? ?? ?? ?? 48 85 c0 74 ?? 48 8b 0d ?? ?? ?? ?? ff d0 48 8b 0d ?? ?? ?? ?? 48 85 c9 74 ?? 48 8b 01 ff 50 10 48 89 1d ?? ?? ?? ?? 48 83 c4 20 5b c3", +15);
+GLOBAL(struct ID3D11DepthStencilView*, g_output_depth_stencil_view, "halo2.dll", 0x19a2958, "4c 8d 44 24 30 48 8b 08 48 8b 01 ff 90 90 01 00 00 48 83 3d ?? ?? ?? ?? 00", +49);
