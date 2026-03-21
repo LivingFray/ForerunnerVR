@@ -5,6 +5,7 @@
 #include <imgui.h>
 #include <backends/imgui_impl_win32.h>
 #include <backends/imgui_impl_dx11.h>
+#include "imgui_extensions.h"
 // System
 #include <d3d11.h>
 #include <chrono>
@@ -209,17 +210,12 @@ bool Launcher::WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam,
 
 void Launcher::DrawSidebar()
 {
-	if (ImGui::Button("Home", ImVec2(ImGui::GetContentRegionAvail().x, 0)))
+	static ImVerticalTabBarState TabState;
+	static std::vector<std::string> TabNames = {"Home", "HaloCEVR", "Project Delta", "Settings"};
+
+	if (RenderVerticalTabBar("Sidebar", TabNames, TabState, ImVec2(-1, -1)))
 	{
-		ActiveWindow = ELauncherWindow::Main;
-	}
-	if (ImGui::Button("HaloCEVR", ImVec2(ImGui::GetContentRegionAvail().x, 0)))
-	{
-		ActiveWindow = ELauncherWindow::HaloCE;
-	}
-	if (ImGui::Button("Settings", ImVec2(ImGui::GetContentRegionAvail().x, 0)))
-	{
-		ActiveWindow = ELauncherWindow::Settings;
+		ActiveWindow = static_cast<ELauncherWindow>(TabState.SelectedIndex);
 	}
 }
 

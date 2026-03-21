@@ -21,6 +21,7 @@ private:
 	{
 		Main,
 		HaloCE,
+		Delta,
 		Settings
 	};
 
