@@ -53,6 +53,29 @@ public: \
 		} \
 		return true; \
 	} \
+	static bool Disable() \
+	{ \
+		if (!PATCH_Address) return false; \
+		MH_STATUS Result = MH_DisableHook(PATCH_Address); \
+		if (Result != MH_OK) \
+		{ \
+			FORERUNNER_ERROR(Patch, "Could not disable hook for " Module ": {}", MH_StatusToString(Result)); \
+			return false; \
+		} \
+		return true; \
+	} \
+	static bool Destroy() \
+	{ \
+		if (!PATCH_Address) return false; \
+		MH_STATUS Result = MH_RemoveHook(PATCH_Address); \
+		PATCH_Address = nullptr; \
+		if (Result != MH_OK) \
+		{ \
+			FORERUNNER_ERROR(Patch, "Could not remove hook for " Module ": {}", MH_StatusToString(Result)); \
+			return false; \
+		} \
+		return true; \
+	} \
 protected: \
 	static ReturnType Patch(__VA_ARGS__); \
 	static inline ReturnType(*Original)(__VA_ARGS__) = nullptr; \

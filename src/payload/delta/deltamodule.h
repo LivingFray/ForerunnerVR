@@ -18,8 +18,10 @@ FORERUNNER_CREATE_LOG_CATEGORY(Delta);
 class RenderTest
 {
 public:
+
 	void ResizeBuffers();
 	void Init();
+	void Deinit();
 
 	void Draw();
 
@@ -39,6 +41,7 @@ class DeltaModule : public Singleton<DeltaModule>
 {
 public:
 	bool Initialise();
+	void Deinitialise();
 
 	void ResourcesInitialize();
 	void Present();
@@ -53,6 +56,8 @@ protected:
 	bool ApplyPatches();
 	bool FindGlobals();
 	bool PatchCode();
+	bool DisablePatches();
+	bool DestroyPatches();
 
 	bool PatchSplitscreen();
 

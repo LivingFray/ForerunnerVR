@@ -41,9 +41,6 @@ DWORD WINAPI MainLoop(HMODULE hModule)
 
 	LogManager::AddConsumer(ConsoleLogConsumer);
 
-	// Let MCC get any startup logic done (e.g. loading the game dlls)
-	Sleep(5000);
-
 	ModuleHandler::Get().Initialise();
 
 	while (true)

@@ -48,6 +48,15 @@ bool DeltaModule::Initialise()
 	return true;
 }
 
+void DeltaModule::Deinitialise()
+{
+	// TODO: Clean up any specific resources/reset any state
+	Test.Deinit();
+
+	DisablePatches();
+	DestroyPatches();
+}
+
 void DeltaModule::ResourcesInitialize()
 {
 	FORERUNNER_LOG(Delta, "ResourcesInitialize");
@@ -122,6 +131,30 @@ bool DeltaModule::PatchCode()
 
 	Patch::ResumeThreads();
 	FORERUNNER_LOG(Delta, "Resuming threads");
+	return bSuccess;
+}
+
+bool DeltaModule::DisablePatches()
+{
+	bool bSuccess = true;
+	bSuccess |= compute_window_bounds::Disable();
+	bSuccess |= players_get_window_count::Disable();
+	bSuccess |= rasterizer_present::Disable();
+	bSuccess |= interface_draw_screen::Disable();
+	bSuccess |= interface_draw_splitscreen_borders::Disable();
+
+	return bSuccess;
+}
+
+bool DeltaModule::DestroyPatches()
+{
+	bool bSuccess = true;
+	bSuccess |= compute_window_bounds::Destroy();
+	bSuccess |= players_get_window_count::Destroy();
+	bSuccess |= rasterizer_present::Destroy();
+	bSuccess |= interface_draw_screen::Destroy();
+	bSuccess |= interface_draw_splitscreen_borders::Destroy();
+
 	return bSuccess;
 }
 
@@ -283,6 +316,23 @@ void RenderTest::Init()
 		renderTargetViewDesc.Texture2D.MipSlice = 0;
 		Device->CreateRenderTargetView(UITexture, 0, &UITargetView);
 	}
+}
+
+void RenderTest::Deinit()
+{
+	NewWindow = nullptr;
+	UnregisterClassW(L"ForerunnerVRClass", GetModuleHandleW(0));
+
+	// Release DX11 objects:
+	if (RenderTargetView) RenderTargetView->Release();
+	if (MirrorTargetView) MirrorTargetView->Release();
+	if (UITargetView) UITargetView->Release();
+
+	SwapChain = nullptr;
+	RenderTargetView = nullptr;
+	MirrorTargetView = nullptr;
+	UITargetView = nullptr;
+	UITexture = nullptr;
 }
 
 void RenderTest::Draw()
