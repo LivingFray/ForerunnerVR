@@ -75,28 +75,22 @@ void DeltaModule::Present()
 	Test.Draw();
 }
 
+using AllPatches = Patch::PatchList<
+	compute_window_bounds,
+	players_get_window_count,
+	rasterizer_present,
+	interface_draw_screen,
+	interface_draw_splitscreen_borders
+>;
+
 bool DeltaModule::CreatePatches()
 {
-	bool bSuccess = true;
-	bSuccess |= compute_window_bounds::Create();
-	bSuccess |= players_get_window_count::Create();
-	bSuccess |= rasterizer_present::Create();
-	bSuccess |= interface_draw_screen::Create();
-	bSuccess |= interface_draw_splitscreen_borders::Create();
-
-	return bSuccess;
+	return AllPatches::CreateAll();
 }
 
 bool DeltaModule::ApplyPatches()
 {
-	bool bSuccess = true;
-	bSuccess |= compute_window_bounds::Enable();
-	bSuccess |= players_get_window_count::Enable();
-	bSuccess |= rasterizer_present::Enable();
-	bSuccess |= interface_draw_screen::Enable();
-	bSuccess |= interface_draw_splitscreen_borders::Enable();
-
-	return bSuccess;
+	return AllPatches::EnableAll();;
 }
 
 bool DeltaModule::FindGlobals()
@@ -136,26 +130,12 @@ bool DeltaModule::PatchCode()
 
 bool DeltaModule::DisablePatches()
 {
-	bool bSuccess = true;
-	bSuccess |= compute_window_bounds::Disable();
-	bSuccess |= players_get_window_count::Disable();
-	bSuccess |= rasterizer_present::Disable();
-	bSuccess |= interface_draw_screen::Disable();
-	bSuccess |= interface_draw_splitscreen_borders::Disable();
-
-	return bSuccess;
+	return AllPatches::DisableAll();
 }
 
 bool DeltaModule::DestroyPatches()
 {
-	bool bSuccess = true;
-	bSuccess |= compute_window_bounds::Destroy();
-	bSuccess |= players_get_window_count::Destroy();
-	bSuccess |= rasterizer_present::Destroy();
-	bSuccess |= interface_draw_screen::Destroy();
-	bSuccess |= interface_draw_splitscreen_borders::Destroy();
-
-	return bSuccess;
+	return AllPatches::DestroyAll();
 }
 
 

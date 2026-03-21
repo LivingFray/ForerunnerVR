@@ -340,4 +340,43 @@ namespace Patch
 			return this->Value != nullptr;
 		}
 	};
+
+	template<typename... P>
+	struct PatchList
+	{
+	public:
+
+		static inline bool CreateAll()
+		{
+			bool bSuccess = true;
+
+			((bSuccess |= P::Create()), ...);
+
+			return bSuccess;
+		}
+		static inline bool EnableAll()
+		{
+			bool bSuccess = true;
+
+			((bSuccess |= P::Enable()), ...);
+
+			return bSuccess;
+		}
+		static inline bool DisableAll()
+		{
+			bool bSuccess = true;
+
+			((bSuccess |= P::Disable()), ...);
+
+			return bSuccess;
+		}
+		static inline bool DestroyAll()
+		{
+			bool bSuccess = true;
+
+			((bSuccess |= P::Destroy()), ...);
+
+			return bSuccess;
+		}
+	};
 }
