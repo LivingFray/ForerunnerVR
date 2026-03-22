@@ -52,7 +52,7 @@ private:
 	static inline std::vector<ConsumerFunc> Consumers;
 };
 
-#define FORERUNNER_CREATE_LOG_CATEGORY(Cat) static inline LogCategory LogCategory_##Cat = {.Name = #Cat};
+#define FORERUNNER_CREATE_LOG_CATEGORY(Cat) inline LogCategory LogCategory_##Cat = {.Name = #Cat};
 #define FORERUNNER_LOG(Cat, Format, ...) LogManager::Log(LogLevel::Log, LogCategory_##Cat, Format, __VA_ARGS__)
 #define FORERUNNER_WARN(Cat, Format, ...) LogManager::Log(LogLevel::Warn, LogCategory_##Cat, Format, __VA_ARGS__)
 #define FORERUNNER_ERROR(Cat, Format, ...) LogManager::Log(LogLevel::Error, LogCategory_##Cat, Format, __VA_ARGS__)

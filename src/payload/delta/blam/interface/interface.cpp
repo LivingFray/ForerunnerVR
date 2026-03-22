@@ -18,7 +18,7 @@ void interface_draw_screen::Patch()
 
 	ID3D11RenderTargetView* ActiveRenderTarget = g_output_target();
 
-	g_output_target() = DeltaModule::Get().Test.UITargetView;
+	g_output_target() = DeltaModule::Get().Render.GetUITargetView();
 
 	// HUD messaging just assumes the render target is set, while all other UI explicity sets the target, so we need to manually set it to our target
 	g_device_context()->OMSetRenderTargets(1, &(g_output_target()), g_output_depth_stencil_view());
@@ -29,27 +29,27 @@ void interface_draw_screen::Patch()
 	DeltaModule::Get().bRenderingHUD = true;
 
 	g_render_camera().viewport_bounds.x0 = 0;
-	g_render_camera().viewport_bounds.x1 = DeltaModule::Get().Test.UI_WIDTH;
+	g_render_camera().viewport_bounds.x1 = DeltaModule::Get().Render.GetUIWidth();
 	g_render_camera().viewport_bounds.y0 = 0;
-	g_render_camera().viewport_bounds.y1 = DeltaModule::Get().Test.UI_HEIGHT;
+	g_render_camera().viewport_bounds.y1 = DeltaModule::Get().Render.GetUIHeight();
 
 	g_render_camera().window_bounds.x0 = 0;
-	g_render_camera().window_bounds.x1 = DeltaModule::Get().Test.UI_WIDTH;
+	g_render_camera().window_bounds.x1 = DeltaModule::Get().Render.GetUIWidth();
 	g_render_camera().window_bounds.y0 = 0;
-	g_render_camera().window_bounds.y1 = DeltaModule::Get().Test.UI_HEIGHT;
+	g_render_camera().window_bounds.y1 = DeltaModule::Get().Render.GetUIHeight();
 
 	rectangle2d OriginalUIViewportBounds = global_window_parameters().camera.viewport_bounds;
 	rectangle2d OriginalUIWindowBounds = global_window_parameters().camera.window_bounds;
 
 	global_window_parameters().camera.viewport_bounds.x0 = 0;
-	global_window_parameters().camera.viewport_bounds.x1 = DeltaModule::Get().Test.UI_WIDTH;
+	global_window_parameters().camera.viewport_bounds.x1 = DeltaModule::Get().Render.GetUIWidth();
 	global_window_parameters().camera.viewport_bounds.y0 = 0;
-	global_window_parameters().camera.viewport_bounds.y1 = DeltaModule::Get().Test.UI_HEIGHT;
+	global_window_parameters().camera.viewport_bounds.y1 = DeltaModule::Get().Render.GetUIHeight();
 
 	global_window_parameters().camera.window_bounds.x0 = 0;
-	global_window_parameters().camera.window_bounds.x1 = DeltaModule::Get().Test.UI_WIDTH;
+	global_window_parameters().camera.window_bounds.x1 = DeltaModule::Get().Render.GetUIWidth();
 	global_window_parameters().camera.window_bounds.y0 = 0;
-	global_window_parameters().camera.window_bounds.y1 = DeltaModule::Get().Test.UI_HEIGHT;
+	global_window_parameters().camera.window_bounds.y1 = DeltaModule::Get().Render.GetUIHeight();
 
 	Original();
 

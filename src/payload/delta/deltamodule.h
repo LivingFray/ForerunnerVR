@@ -7,35 +7,9 @@
 #include "common/utils/singleton.h"
 #include "common/utils/log.h"
 #include "payload/forerunner/patch.h"
-#include "blam/game/players.h"
-#include "blam/rasterizer/rasterizer_globals.h"
-#include "blam/render/render_cameras.h"
+#include "rendercomponent.h"
 
 FORERUNNER_CREATE_LOG_CATEGORY(Delta);
-
-// TEMP!!
-// Use to test simple d3d11 interactions, later replace this with VR/move into a VR emulator backend
-class RenderTest
-{
-public:
-
-	void ResizeBuffers();
-	void Init();
-	void Deinit();
-
-	void Draw();
-
-	struct IDXGISwapChain1* SwapChain = nullptr;
-	struct ID3D11RenderTargetView* RenderTargetView;
-	struct ID3D11RenderTargetView* MirrorTargetView;
-	struct ID3D11RenderTargetView* UITargetView;
-	struct ID3D11Texture2D* UITexture;
-
-	HWND NewWindow = NULL;
-
-	UINT UI_WIDTH = 800;
-	UINT UI_HEIGHT = 600;
-};
 
 class DeltaModule : public Singleton<DeltaModule>
 {
@@ -43,10 +17,12 @@ public:
 	bool Initialise();
 	void Deinitialise();
 
-	void ResourcesInitialize();
 	void Present();
 
-	RenderTest Test;
+	class IVR* VR = nullptr;
+
+	RenderComponent Render;
+
 
 protected:
 	static inline const char* ModuleName = "halo2.dll";

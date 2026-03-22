@@ -1,11 +1,16 @@
 #include "deltamodule.h"
+// Utils
 #include "common/utils/inject.h"
-
+#include "common/vr/IVR.h"
+#include "common/vr/emulatedvr.h"
+// Blam decomp code
 #include "payload/delta/blam/game/players.h"
 #include "payload/delta/blam/interface/interface.h"
 #include "payload/delta/blam/main/main_render.h"
 #include "payload/delta/blam/rasterizer/rasterizer_main.h"
+#include "payload/delta/blam/rasterizer/rasterizer_globals.h"
 #include "payload/delta/blam/render/render.h"
+// DirectX
 #include <d3d11.h>
 #include <dxgi1_2.h>
 
@@ -18,6 +23,10 @@ bool DeltaModule::Initialise()
 		FORERUNNER_WARN(Delta, "Can't find module, game is likely not installed");
 		return false;
 	}
+
+	// TODO: This should be done at a higher level (i.e. in a forerunner module)
+	VR = new EmulatedVR();
+	VR->EarlyInit();
 
 	if (!FindGlobals())
 	{
@@ -45,34 +54,42 @@ bool DeltaModule::Initialise()
 
 	FORERUNNER_LOG(Delta, "Successfully patched");
 
+	// TODO: These might need moving too
+
+	//Render.Init();
+
 	return true;
 }
 
 void DeltaModule::Deinitialise()
 {
 	// TODO: Clean up any specific resources/reset any state
-	Test.Deinit();
+	Render.Shutdown();
 
 	DisablePatches();
 	DestroyPatches();
 }
 
-void DeltaModule::ResourcesInitialize()
-{
-	FORERUNNER_LOG(Delta, "ResourcesInitialize");
-
-	// Not inited yet
-	if (!Test.NewWindow)
-	{
-		return;
-	}
-
-	g_output_target() = Test.RenderTargetView;
-}
+static bool bHasInit = false;
 
 void DeltaModule::Present()
 {
-	Test.Draw();
+	// TODO: Move this
+	if (!bHasInit)
+	{
+		VR->SetDevice(g_device());
+		VR->SetDeviceContext(g_device_context());
+		VR->Init();
+
+		Render.Init();
+		bHasInit = true;
+	}
+	
+	// This needs moving to earlier in the game loop!
+	// (and also needs a delta time fed into it!)
+	VR->Update(0.0f);
+
+	Render.Draw();
 }
 
 using AllPatches = Patch::PatchList<
@@ -90,7 +107,7 @@ bool DeltaModule::CreatePatches()
 
 bool DeltaModule::ApplyPatches()
 {
-	return AllPatches::EnableAll();;
+	return AllPatches::EnableAll();
 }
 
 bool DeltaModule::FindGlobals()
@@ -138,7 +155,6 @@ bool DeltaModule::DestroyPatches()
 	return AllPatches::DestroyAll();
 }
 
-
 bool DeltaModule::PatchSplitscreen()
 {
 	// Patch 2 function calls in update_player_views to use player 0 as the target player
@@ -168,220 +184,4 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 			result = DefWindowProcW(hwnd, msg, wparam, lparam);
 	}
 	return result;
-}
-
-void RenderTest::ResizeBuffers()
-{
-	DXGI_SWAP_CHAIN_DESC desc;
-	g_swap_chain()->GetDesc(&desc);
-	UINT bufferCount = desc.BufferCount;
-
-	FORERUNNER_LOG(Delta, "g_swap_chain: {}x{} ({})", desc.BufferDesc.Width, desc.BufferDesc.Height, desc.BufferCount);
-
-	rasterizer_deinitialize();
-	FORERUNNER_LOG(Delta, "Deinitializing rasterizer");
-
-	rasterizer_set_display_size(800, 600);
-	FORERUNNER_LOG(Delta, "Setting rasterizer display size");
-
-	rasterizer_initialize();
-	FORERUNNER_LOG(Delta, "Initializing rasterizer");
-
-	MirrorTargetView = g_output_target();
-	g_output_target() = RenderTargetView;
-}
-
-void RenderTest::Init()
-{
-	FORERUNNER_LOG(Delta, "Render Init");
-
-	// Create window class
-	WNDCLASSEXW WinClass = {};
-	WinClass.cbSize = sizeof(WNDCLASSEXW);
-	WinClass.style = CS_HREDRAW | CS_VREDRAW;
-	WinClass.lpfnWndProc = &WndProc;
-	WinClass.hInstance = GetModuleHandleW(0);
-	WinClass.hCursor = LoadCursorW(0, IDC_ARROW);
-	WinClass.lpszClassName = L"ForerunnerVRClass";
-
-	if (!RegisterClassExW(&WinClass))
-	{
-		FORERUNNER_ERROR(Delta, "RegisterClassEx failed");
-		return;
-	}
-
-	RECT WindowRect = {0, 0, 800, 600};
-	AdjustWindowRect(&WindowRect, WS_OVERLAPPEDWINDOW, FALSE);
-
-	NewWindow = CreateWindowExW(0, WinClass.lpszClassName, L"Forerunner Render Test", WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, WindowRect.right - WindowRect.left, WindowRect.bottom - WindowRect.top, 0, 0, GetModuleHandleW(0), 0);
-
-	FORERUNNER_LOG(Delta, "Created window");
-
-	// Create swapchain for new window
-	ID3D11Device* Device = g_device();
-	ID3D11DeviceContext* Context = g_device_context();
-
-	FORERUNNER_LOG(Delta, "Waiting on DX11");
-	while (!Device)
-	{
-		Sleep(20);
-		Device = g_device();
-		Context = g_device_context();
-	}
-
-	FORERUNNER_LOG(Delta, "Got device and context ({:#08x} + {:#08x})", reinterpret_cast<int64_t>(Device), reinterpret_cast<int64_t>(Context));
-
-	DXGI_SWAP_CHAIN_DESC1 SwapChainDesc{};
-	SwapChainDesc.BufferCount = 2;
-	SwapChainDesc.Width = 0;
-	SwapChainDesc.Height = 0;
-	SwapChainDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-	SwapChainDesc.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
-	SwapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-	SwapChainDesc.SampleDesc.Count = 1;
-	SwapChainDesc.SampleDesc.Quality = 0;
-	SwapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
-
-	D3D_FEATURE_LEVEL FeatureLevels[] = {D3D_FEATURE_LEVEL_11_0};
-
-	HRESULT hr;
-	IDXGIDevice2* pDXGIDevice;
-	hr = Device->QueryInterface(__uuidof(IDXGIDevice2), (void**)&pDXGIDevice);
-
-	IDXGIAdapter* pDXGIAdapter;
-	hr = pDXGIDevice->GetParent(__uuidof(IDXGIAdapter), (void**)&pDXGIAdapter);
-
-	IDXGIFactory2* pIDXGIFactory;
-	pDXGIAdapter->GetParent(__uuidof(IDXGIFactory2), (void**)&pIDXGIFactory);
-
-	pIDXGIFactory->CreateSwapChainForHwnd(Device, NewWindow, &SwapChainDesc, NULL, NULL, &SwapChain);
-
-	if (!SwapChain)
-	{
-		FORERUNNER_ERROR(Delta, "Can't create swap chain for window: {}", GetLastError());
-		return;
-	}
-
-	FORERUNNER_LOG(Delta, "Created swapchain");
-
-	ID3D11Texture2D* BackBuffer;
-	SwapChain->GetBuffer(0, IID_PPV_ARGS(&BackBuffer));
-	Device->CreateRenderTargetView(BackBuffer, nullptr, &RenderTargetView);
-	BackBuffer->Release();
-	FORERUNNER_LOG(Delta, "Grabbed backbuffer");
-
-	ShowWindow(NewWindow, SW_SHOW);
-	UpdateWindow(NewWindow);
-
-	// Create UI render view
-	{
-		D3D11_TEXTURE2D_DESC bufferDesc{};
-		bufferDesc.ArraySize = 1;
-		bufferDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
-		bufferDesc.CPUAccessFlags = 0;
-		bufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-		bufferDesc.Width = UI_WIDTH;
-		bufferDesc.Height = UI_HEIGHT;
-		bufferDesc.MipLevels = 1;
-		bufferDesc.MiscFlags = 0;
-		bufferDesc.SampleDesc.Count = 1;
-		bufferDesc.SampleDesc.Quality = 0;
-		bufferDesc.Usage = D3D11_USAGE_DEFAULT;
-		Device->CreateTexture2D(&bufferDesc, 0, &UITexture);
-
-		//Creating a view of the texture to be used when binding it as a render target
-		D3D11_RENDER_TARGET_VIEW_DESC renderTargetViewDesc;
-		renderTargetViewDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-		renderTargetViewDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
-		renderTargetViewDesc.Texture2D.MipSlice = 0;
-		Device->CreateRenderTargetView(UITexture, 0, &UITargetView);
-	}
-}
-
-void RenderTest::Deinit()
-{
-	NewWindow = nullptr;
-	UnregisterClassW(L"ForerunnerVRClass", GetModuleHandleW(0));
-
-	// Release DX11 objects:
-	if (RenderTargetView) RenderTargetView->Release();
-	if (MirrorTargetView) MirrorTargetView->Release();
-	if (UITargetView) UITargetView->Release();
-
-	SwapChain = nullptr;
-	RenderTargetView = nullptr;
-	MirrorTargetView = nullptr;
-	UITargetView = nullptr;
-	UITexture = nullptr;
-}
-
-void RenderTest::Draw()
-{
-	if (!NewWindow)
-	{
-		Init();
-		ResizeBuffers();
-	}
-
-	MSG Message{};
-	while (PeekMessageW(&Message, NewWindow, 0, 0, PM_REMOVE))
-	{
-		TranslateMessage(&Message);
-		DispatchMessage(&Message);
-	}
-
-	ID3D11Device* Device = g_device();
-	ID3D11DeviceContext* Context = g_device_context();
-		
-	const float clear_color_with_alpha[4] = {0.2f, 0.2f, 0.4f, 1.0f};
-	Context->ClearRenderTargetView(MirrorTargetView, clear_color_with_alpha);
-
-	{
-		ID3D11Resource* srcResource = nullptr;
-		RenderTargetView->GetResource(&srcResource);
-
-		ID3D11Texture2D* srcTex = nullptr;
-		srcResource->QueryInterface(__uuidof(ID3D11Texture2D), (void**)&srcTex);
-
-		ID3D11Resource* dstResource = nullptr;
-		MirrorTargetView->GetResource(&dstResource);
-
-		ID3D11Texture2D* dstTex = nullptr;
-		dstResource->QueryInterface(__uuidof(ID3D11Texture2D), (void**)&dstTex);
-
-		D3D11_TEXTURE2D_DESC srcDesc{};
-		D3D11_TEXTURE2D_DESC dstDesc{};
-		srcTex->GetDesc(&srcDesc);
-		dstTex->GetDesc(&dstDesc);
-
-		D3D11_BOX srcBox;
-		srcBox.left = 0;
-		srcBox.top = 0;
-		srcBox.front = 0;
-		srcBox.right = std::min(srcDesc.Width, dstDesc.Width);
-		srcBox.bottom = std::min(srcDesc.Height, dstDesc.Height);
-		srcBox.back = 1;
-
-		Context->CopySubresourceRegion(dstResource, 0, 0, 0, 0, srcTex, 0, &srcBox);
-
-
-		srcBox.left = 0;
-		srcBox.top = 0;
-		srcBox.front = 0;
-		srcBox.right = std::min(UI_WIDTH, dstDesc.Width);
-		srcBox.bottom = std::min(UI_HEIGHT, dstDesc.Height);
-		srcBox.back = 1;
-
-
-		Context->CopySubresourceRegion(dstResource, 0, 800, 0, 0, UITexture, 0, &srcBox);
-
-		srcTex->Release();
-		dstTex->Release();
-		srcResource->Release();
-		dstResource->Release();
-	}
-
-	SwapChain->Present(0, 0);
-
-	Context->ClearRenderTargetView(UITargetView, clear_color_with_alpha);
 }
