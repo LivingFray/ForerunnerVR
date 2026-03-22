@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include "payload/forerunner/patch.h"
 #include "payload/delta/blam/math/integer_math.h"
 #include "payload/delta/blam/math/real_math.h"
 

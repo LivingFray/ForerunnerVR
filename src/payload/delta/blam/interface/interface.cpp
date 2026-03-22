@@ -5,16 +5,41 @@
 #include "payload/delta/blam/render/render_cameras.h"
 
 #include "payload/delta/deltamodule.h"
+#include "payload/delta/rendercomponent.h"
+#include "payload/delta/uicomponent.h"
 
+#include <DirectXMath.h>
 #include <d3d11.h>
 
 void interface_draw_screen::Patch()
 {
+	int index = player_window_index();
+	if (index >= 0 && index < 2)
+	{
+		const auto& proj = global_window_parameters().projection;
+
+		DirectX::XMMATRIX viewMat;
+		viewMat.r[0] = DirectX::XMVectorSet(proj.world_to_view.rotation.matrix[0][0], proj.world_to_view.rotation.matrix[0][1], proj.world_to_view.rotation.matrix[0][2], 0.0f);
+		viewMat.r[1] = DirectX::XMVectorSet(proj.world_to_view.rotation.matrix[1][0], proj.world_to_view.rotation.matrix[1][1], proj.world_to_view.rotation.matrix[1][2], 0.0f);
+		viewMat.r[2] = DirectX::XMVectorSet(proj.world_to_view.rotation.matrix[2][0], proj.world_to_view.rotation.matrix[2][1], proj.world_to_view.rotation.matrix[2][2], 0.0f);
+		viewMat.r[3] = DirectX::XMVectorSet(proj.world_to_view.translation.x, proj.world_to_view.translation.y, proj.world_to_view.translation.z, 1.0f);
+
+		DirectX::XMMATRIX projMat;
+		projMat.r[0] = DirectX::XMVectorSet(proj.projection_matrix.matrix[0][0], proj.projection_matrix.matrix[0][1], proj.projection_matrix.matrix[0][2], proj.projection_matrix.matrix[0][3]);
+		projMat.r[1] = DirectX::XMVectorSet(proj.projection_matrix.matrix[1][0], proj.projection_matrix.matrix[1][1], proj.projection_matrix.matrix[1][2], proj.projection_matrix.matrix[1][3]);
+		projMat.r[2] = DirectX::XMVectorSet(proj.projection_matrix.matrix[2][0], proj.projection_matrix.matrix[2][1], proj.projection_matrix.matrix[2][2], proj.projection_matrix.matrix[2][3]);
+		projMat.r[3] = DirectX::XMVectorSet(proj.projection_matrix.matrix[3][0], proj.projection_matrix.matrix[3][1], proj.projection_matrix.matrix[3][2], proj.projection_matrix.matrix[3][3]);
+
+		DeltaModule::Get().Render.SetEyeViewProj(index, viewMat * projMat);
+	}
+
 	// Only draw hud for first eye
-	if (player_window_index() != 0)
+	if (index != 0)
 	{
 		return;
 	}
+
+	DeltaModule::Get().UI.UpdateHUD();
 
 	ID3D11RenderTargetView* ActiveRenderTarget = g_output_target();
 

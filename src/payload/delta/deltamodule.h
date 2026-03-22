@@ -8,6 +8,7 @@
 #include "common/utils/log.h"
 #include "payload/forerunner/patch.h"
 #include "rendercomponent.h"
+#include "uicomponent.h"
 
 FORERUNNER_CREATE_LOG_CATEGORY(Delta);
 
@@ -22,6 +23,7 @@ public:
 	class IVR* VR = nullptr;
 
 	RenderComponent Render;
+	UIComponent UI;
 
 
 protected:
