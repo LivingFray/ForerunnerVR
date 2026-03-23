@@ -1,4 +1,5 @@
 #include "emulatedvr.h"
+#include "common/utils/utils.h"
 #include <d3d11.h>
 #include <dxgi1_2.h>
 
@@ -145,14 +146,38 @@ void EmulatedVR::SetDeviceContext(ID3D11DeviceContext* InContext)
 	this->DeviceContext = InContext;
 }
 
-float EmulatedVR::GetDesiredWidth()
+float EmulatedVR::GetDesiredWidth() const
 {
 	return VR_WIDTH;
 }
 
-float EmulatedVR::GetDesiredHeight()
+float EmulatedVR::GetDesiredHeight() const
 {
 	return VR_HEIGHT;
+}
+
+float EmulatedVR::GetVerticalFieldOfView(EVR_Eye Eye) const
+{
+    return Deg2Rad(90.0f);
+}
+
+VR::Matrix4x4 EmulatedVR::GetHMDTransform() const
+{
+	return VR::Matrix4x4::Translation(0.0f, 0.0f, 0.1f);
+}
+
+VR::Matrix4x4 EmulatedVR::GetEyeTransform(EVR_Eye Eye) const
+{
+	switch (Eye)
+	{
+		case EVR_Eye::Left:
+			return VR::Matrix4x4::Translation(0.0f, -0.5f, 0.0f);
+		case EVR_Eye::Right:
+			return VR::Matrix4x4::Translation(0.0f, 0.5f, 0.0f);
+		default:
+			FORERUNNER_WARN(EmuVR, "Unexpected value for Eye passed to GetEyeTransform: {}", static_cast<int>(Eye));
+			return VR::Matrix4x4::Identity();
+	}
 }
 
 static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)

@@ -23,3 +23,9 @@ ScopeExit<F> MakeScopeExit(F f)
 #define DO_STRING_JOIN2(arg1, arg2) arg1 ## arg2
 #define SCOPE_EXIT(code) \
     auto STRING_JOIN2(scope_exit_, __LINE__) = MakeScopeExit([=](){code;})
+
+constexpr float Deg2Rad(float Degrees)
+{
+	constexpr float ConversionRatio = (3.1415926535f) / 180.0f;
+	return Degrees * ConversionRatio;
+}

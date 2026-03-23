@@ -1,5 +1,6 @@
 #pragma once
-#include <stdint.h>
+#include <cstdint>
+#include "Matrices.h"
 
 enum class EVR_Eye : uint8_t
 {
@@ -35,7 +36,13 @@ public:
 	virtual void SetDeviceContext(struct ID3D11DeviceContext* Context) = 0;
 
 	// Get the desired width of the render target for one eye
-	virtual float GetDesiredWidth() = 0;
+	virtual float GetDesiredWidth() const = 0;
 	// Get the desired height of the render target for one eye
-	virtual float GetDesiredHeight() = 0;
+	virtual float GetDesiredHeight() const = 0;
+	// Get the vertical field of view (in radians) the current eye should be rendered at
+	virtual float GetVerticalFieldOfView(EVR_Eye Eye) const = 0;
+	// Get the transform of the HMD, relative to its origin. Units are meters, coordinate system is forward = +x, right = +y, up = +z // TODO: Check that is the correct coordinate system!
+	virtual VR::Matrix4x4 GetHMDTransform() const = 0;
+	// Get the transform of the requested eye, relative to the HMD. Units are meters, coordinate system is forward = +x, right = +y, up = +z // TODO: Check that is the correct coordinate system!
+	virtual VR::Matrix4x4 GetEyeTransform(EVR_Eye Eye) const = 0;
 };

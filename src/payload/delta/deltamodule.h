@@ -7,8 +7,10 @@
 #include "common/utils/singleton.h"
 #include "common/utils/log.h"
 #include "payload/forerunner/patch.h"
+// Components
 #include "rendercomponent.h"
 #include "uicomponent.h"
+#include "cameracomponent.h"
 
 FORERUNNER_CREATE_LOG_CATEGORY(Delta);
 
@@ -24,7 +26,7 @@ public:
 
 	RenderComponent Render;
 	UIComponent UI;
-
+	CameraComponent Camera;
 
 protected:
 	static inline const char* ModuleName = "halo2.dll";

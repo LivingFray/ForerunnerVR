@@ -22,8 +22,11 @@ public:
 	void SubmitEye(EVR_Eye Eye, ID3D11RenderTargetView* RenderTargetView, const VR_Bounds& ViewBounds) override;
 	void SetDevice(ID3D11Device* Device) override;
 	void SetDeviceContext(ID3D11DeviceContext* Context) override;
-	float GetDesiredWidth() override;
-	float GetDesiredHeight() override;
+	float GetDesiredWidth() const override;
+	float GetDesiredHeight() const override;
+	virtual float GetVerticalFieldOfView(EVR_Eye Eye) const override;
+	virtual VR::Matrix4x4 GetHMDTransform() const override;
+	virtual VR::Matrix4x4 GetEyeTransform(EVR_Eye Eye) const override;
 
 protected:
 	bool CreateVRWindow();
