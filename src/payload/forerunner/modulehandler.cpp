@@ -5,18 +5,28 @@
 #include "payload/delta/deltamodule.h"
 #include "common/utils/log.h"
 
-void ModuleHandler::Initialise()
+void ModuleHandler::Initialise(wchar_t* InDLLPath)
 {
+	wcscpy_s(DLLPath, InDLLPath);
+
+	{
+		char AnsiBuffer[sizeof(DLLPath) / sizeof(DLLPath[0])];
+		WideCharToMultiByte(CP_ACP, 0, DLLPath, wcslen(DLLPath) + 1, AnsiBuffer, sizeof(AnsiBuffer), NULL, NULL);
+		FORERUNNER_LOG(Forerunner, "ModuleHandler loaded from {}", AnsiBuffer);
+	}
+
 	// Do any shared initialisation logic first
 	if (!Patch::Initialise())
 	{
 		return;
 	}
 
-	FORERUNNER_LOG(Forerunner, "ModuleHandler loaded, patching MCC");
+	FORERUNNER_LOG(Forerunner, "Patching MCC");
 	
 	CreateGameEngine::Create();
 	CreateGameEngine::Enable();
+
+	FORERUNNER_LOG(Forerunner, "Finished Initialising");
 }
 
 void ModuleHandler::LoadModule(GameModule GameId)

@@ -41,7 +41,10 @@ DWORD WINAPI MainLoop(HMODULE hModule)
 
 	LogManager::AddConsumer(ConsoleLogConsumer);
 
-	ModuleHandler::Get().Initialise();
+	wchar_t DLLPath[MAX_PATH];
+	GetModuleFileNameW(hModule, DLLPath, MAX_PATH);
+
+	ModuleHandler::Get().Initialise(DLLPath);
 
 	while (true)
 	{
@@ -70,7 +73,7 @@ BOOL APIENTRY DllMain(HMODULE hModule,
 	{
 		case DLL_PROCESS_ATTACH:
 			// Create thread with main loop
-			CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)MainLoop, NULL, 0, NULL);
+			CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)MainLoop, hModule, 0, NULL);
 			break;
 		case DLL_THREAD_ATTACH:
 		case DLL_THREAD_DETACH:
