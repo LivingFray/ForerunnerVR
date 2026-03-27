@@ -1,5 +1,6 @@
 #pragma once
 #include "IVR.h"
+#include "common/vr/matrices.h"
 #include "common/utils/log.h"
 
 #define WIN32_LEAN_AND_MEAN
@@ -37,4 +38,8 @@ protected:
 	struct ID3D11DeviceContext* DeviceContext = nullptr;
 	struct IDXGISwapChain1* SwapChain = nullptr;
 	struct ID3D11RenderTargetView* BackBufferView = nullptr;
+
+	float CameraYaw = 0.0f;
+	float CameraPitch = 0.0f;
+	VR::Vector3 CameraOffset = VR::Vector3(0.0f, 0.0f, 0.05f);
 };

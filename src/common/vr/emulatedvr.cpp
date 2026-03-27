@@ -2,6 +2,7 @@
 #include "common/utils/utils.h"
 #include <d3d11.h>
 #include <dxgi1_2.h>
+#include <numbers>
 
 static constexpr int VR_WIDTH = 800;
 static constexpr int VR_HEIGHT = 600;
@@ -62,6 +63,29 @@ void EmulatedVR::Update(float DeltaTime)
 		TranslateMessage(&Message);
 		DispatchMessage(&Message);
 	}
+
+	// Check numpad keys for camera rotation
+	if (GetAsyncKeyState(VK_NUMPAD4) & 0x8000)
+	{
+		CameraYaw -= DeltaTime;
+	}
+	if (GetAsyncKeyState(VK_NUMPAD6) & 0x8000)
+	{
+		CameraYaw += DeltaTime;
+	}
+	if (GetAsyncKeyState(VK_NUMPAD8) & 0x8000)
+	{
+		CameraPitch += DeltaTime;
+	}
+	if (GetAsyncKeyState(VK_NUMPAD2) & 0x8000)
+	{
+		CameraPitch -= DeltaTime;
+	}
+
+	// Limit rotation values
+	CameraYaw = fmodf(CameraYaw, std::numbers::pi_v<float> * 2.0f);
+	CameraPitch = std::min(CameraPitch, std::numbers::pi_v<float> * 0.5f);
+	CameraPitch = std::max(CameraPitch, -std::numbers::pi_v<float> * 0.5f);
 }
 
 void EmulatedVR::SubmitEye(EVR_Eye Eye, ID3D11RenderTargetView* RenderTargetView, const VR_Bounds& ViewBounds)
@@ -163,7 +187,10 @@ float EmulatedVR::GetVerticalFieldOfView(EVR_Eye Eye) const
 
 VR::Matrix4x4 EmulatedVR::GetHMDTransform() const
 {
-	return VR::Matrix4x4::Translation(0.0f, 0.0f, 0.1f);
+	// Convert pitch and yaw into rotation transform, then add camera offset
+	VR::Matrix4x4 Rotation = VR::Matrix4x4::RotationZ(CameraYaw) * VR::Matrix4x4::RotationY(CameraPitch);
+
+	return Rotation * VR::Matrix4x4::Translation(CameraOffset);
 }
 
 VR::Matrix4x4 EmulatedVR::GetEyeTransform(EVR_Eye Eye) const

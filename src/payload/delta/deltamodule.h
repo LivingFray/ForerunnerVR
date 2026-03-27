@@ -20,6 +20,9 @@ public:
 	bool Initialise();
 	void Deinitialise();
 
+	void PreUpdate(int ticks, float* seconds);
+	void PostUpdate(int ticks, float* seconds);
+
 	void Present();
 
 	class IVR* VR = nullptr;

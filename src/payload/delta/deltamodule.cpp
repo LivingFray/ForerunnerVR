@@ -4,9 +4,11 @@
 #include "common/vr/IVR.h"
 #include "common/vr/emulatedvr.h"
 // Blam decomp code
+#include "payload/delta/blam/game/game.h"
 #include "payload/delta/blam/game/players.h"
 #include "payload/delta/blam/interface/interface.h"
 #include "payload/delta/blam/main/main_render.h"
+#include "payload/delta/blam/main/main_time.h"
 #include "payload/delta/blam/rasterizer/rasterizer_main.h"
 #include "payload/delta/blam/rasterizer/rasterizer_globals.h"
 #include "payload/delta/blam/render/render.h"
@@ -72,6 +74,18 @@ void DeltaModule::Deinitialise()
 
 static bool bHasInit = false;
 
+void DeltaModule::PreUpdate(int ticks, float* seconds)
+{
+	if (bHasInit)
+	{
+		VR->Update(g_delta_time());
+	}
+}
+
+void DeltaModule::PostUpdate(int ticks, float* seconds)
+{
+}
+
 void DeltaModule::Present()
 {
 	// TODO: Move this
@@ -83,11 +97,9 @@ void DeltaModule::Present()
 
 		Render.Init();
 		bHasInit = true;
+
+		VR->Update(g_delta_time());
 	}
-	
-	// This needs moving to earlier in the game loop!
-	// (and also needs a delta time fed into it!)
-	VR->Update(0.0f);
 
 	Render.Draw();
 }
@@ -97,7 +109,9 @@ using AllPatches = Patch::PatchList<
 	players_get_window_count,
 	rasterizer_present,
 	interface_draw_screen,
-	interface_draw_splitscreen_borders
+	interface_draw_splitscreen_borders,
+	players_update_before_game,
+	game_update
 >;
 
 bool DeltaModule::CreatePatches()
@@ -128,6 +142,7 @@ bool DeltaModule::FindGlobals()
 	bSuccess |= player_window_index.Find();
 	bSuccess |= g_render_camera.Find();
 	bSuccess |= global_window_parameters.Find();
+	bSuccess |= g_delta_time.Find();
 
 	return bSuccess;
 }

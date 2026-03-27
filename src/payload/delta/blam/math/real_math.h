@@ -82,3 +82,67 @@ struct real_rectangle2d
 	float y1;
 };
 static_assert(sizeof(real_rectangle2d) == 0x10);
+
+struct euler_angles2d
+{
+	float yaw;
+	float pitch;
+};
+static_assert(sizeof(euler_angles2d) == 0x8);
+
+
+// Formatting
+#include <format>
+template <>
+struct std::formatter<real_vector2d> : std::formatter<std::string_view>
+{
+	constexpr auto parse(std::format_parse_context& ctx)
+	{
+		return ctx.begin();
+	}
+
+	auto format(real_vector2d v, std::format_context& ctx) const
+	{
+		return std::format_to(ctx.out(), "[{}, {}]", v.x, v.y);
+	}
+};
+template <>
+struct std::formatter<real_vector3d> : std::formatter<std::string_view>
+{
+	constexpr auto parse(std::format_parse_context& ctx)
+	{
+		return ctx.begin();
+	}
+
+	auto format(real_vector3d v, std::format_context& ctx) const
+	{
+		return std::format_to(ctx.out(), "[{}, {}, {}]", v.x, v.y, v.z);
+	}
+};
+template <>
+struct std::formatter<real_vector4d> : std::formatter<std::string_view>
+{
+	constexpr auto parse(std::format_parse_context& ctx)
+	{
+		return ctx.begin();
+	}
+
+	auto format(real_vector4d v, std::format_context& ctx) const
+	{
+		return std::format_to(ctx.out(), "[{}, {}, {}, {}]", v.x, v.y, v.z, v.w);
+	}
+};
+
+template <>
+struct std::formatter<euler_angles2d> : std::formatter<std::string_view>
+{
+	constexpr auto parse(std::format_parse_context& ctx)
+	{
+		return ctx.begin();
+	}
+
+	auto format(euler_angles2d e, std::format_context& ctx) const
+	{
+		return std::format_to(ctx.out(), "[yaw = {}, pitch = {}]", e.yaw, e.pitch);
+	}
+};
