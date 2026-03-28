@@ -4,6 +4,9 @@
 #include "payload/forerunner/patch.h"
 #include "payload/delta/deltamodule.h"
 #include "common/utils/log.h"
+#include "common/utils/utils.h"
+#include "common/utils/utils.h"
+#include <filesystem>
 
 void ModuleHandler::Initialise(wchar_t* InDLLPath)
 {
@@ -11,20 +14,50 @@ void ModuleHandler::Initialise(wchar_t* InDLLPath)
 
 	{
 		char AnsiBuffer[sizeof(DLLPath) / sizeof(DLLPath[0])];
-		WideCharToMultiByte(CP_ACP, 0, DLLPath, wcslen(DLLPath) + 1, AnsiBuffer, sizeof(AnsiBuffer), NULL, NULL);
+		WideCharToMultiByte(CP_ACP, 0, DLLPath, static_cast<int>(wcslen(DLLPath)) + 1, AnsiBuffer, sizeof(AnsiBuffer), NULL, NULL);
 		FORERUNNER_LOG(Forerunner, "ModuleHandler loaded from {}", AnsiBuffer);
 	}
+
+	ForerunnerPath = std::filesystem::path{DLLPath}.parent_path();
 
 	// Do any shared initialisation logic first
 	if (!Patch::Initialise())
 	{
+		FORERUNNER_ERROR(Forerunner, "Failed to initialise patcher");
 		return;
 	}
 
-	FORERUNNER_LOG(Forerunner, "Patching MCC");
+	FORERUNNER_LOG(Forerunner, "Loading OpenVR...");
+
+	std::filesystem::path Path = ForerunnerPath / L"openvr_api.dll";
 	
-	CreateGameEngine::Create();
-	CreateGameEngine::Enable();
+	FORERUNNER_LOG(Forerunner, "Looking for OpenVR at {}", Path.string());
+
+	OpenVRHandle = LoadLibraryW(Path.wstring().data());
+
+	if (!OpenVRHandle)
+	{
+		FORERUNNER_ERROR(Forerunner, "Couldn't load OpenVR ({})", GetLastError());
+	}
+	else
+	{
+		FORERUNNER_LOG(Forerunner, "Successfully loaded OpenVR");
+	}
+
+	FORERUNNER_LOG(Forerunner, "Patching MCC...");
+	
+	bool bPatchSuccess = true;
+	bPatchSuccess |= CreateGameEngine::Create();
+	bPatchSuccess |= CreateGameEngine::Enable();
+
+	if (!bPatchSuccess)
+	{
+		FORERUNNER_ERROR(Forerunner, "Couldn't patch MCC");
+	}
+	else
+	{
+		FORERUNNER_LOG(Forerunner, "Successfully patched MCC");
+	}
 
 	FORERUNNER_LOG(Forerunner, "Finished Initialising");
 }

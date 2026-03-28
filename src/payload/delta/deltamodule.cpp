@@ -3,6 +3,7 @@
 #include "common/utils/inject.h"
 #include "common/vr/IVR.h"
 #include "common/vr/emulatedvr.h"
+#include "common/vr/openvr.h"
 // Blam decomp code
 #include "payload/delta/blam/game/game.h"
 #include "payload/delta/blam/game/players.h"
@@ -59,6 +60,8 @@ bool DeltaModule::Initialise()
 	// TODO: These might need moving too
 
 	//Render.Init();
+
+	(new OpenVR())->EarlyInit();
 
 	return true;
 }

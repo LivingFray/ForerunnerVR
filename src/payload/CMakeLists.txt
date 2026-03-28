@@ -26,4 +26,13 @@ set_property(TARGET ForerunnerPayload PROPERTY CXX_STANDARD 20)
 target_include_directories(ForerunnerPayload PRIVATE
     ${CMAKE_SOURCE_DIR}/src
 	${CMAKE_SOURCE_DIR}/lib/minhook/include
+	${CMAKE_SOURCE_DIR}/lib/openvr
 )
+
+target_link_libraries(ForerunnerPayload PRIVATE 
+	d3d11.lib
+	${CMAKE_SOURCE_DIR}/lib/openvr/openvr_api.lib
+	delayimp.lib
+)
+
+target_link_options(ForerunnerPayload PRIVATE "/DELAYLOAD:openvr_api.dll")

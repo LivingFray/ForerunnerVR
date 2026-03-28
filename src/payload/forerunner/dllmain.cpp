@@ -2,11 +2,13 @@
 #define NOMINMAX
 #define UNICODE
 #include <windows.h>
-#include <Psapi.h>
 #include <iostream>
 #include "payload/forerunner/modulehandler.h"
 #include "common/utils/log.h"
+#include <filesystem>
+#include <fstream>
 
+FORERUNNER_CREATE_LOG_CATEGORY(DLLMain);
 
 void ConsoleLogConsumer(LogLevel Level, const LogCategory& Category, const std::string& Message)
 {
@@ -32,8 +34,20 @@ void ConsoleLogConsumer(LogLevel Level, const LogCategory& Category, const std::
 	SetConsoleTextAttribute(hConsole, FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE);
 }
 
+static std::ofstream LogFile;
+
+void FileLogConsumer(LogLevel Level, const LogCategory& Category, const std::string& Message)
+{
+	if (!LogFile.is_open())
+	{
+		return;
+	}
+
+	LogFile << "[" << LogLevelToString(Level) << "][" << Category.Name << "] " << Message << std::endl;
+}
+
 DWORD WINAPI MainLoop(HMODULE hModule)
-{	
+{
 	// Debug console
 	AllocConsole();
 	FILE* fp;
@@ -44,6 +58,16 @@ DWORD WINAPI MainLoop(HMODULE hModule)
 	wchar_t DLLPath[MAX_PATH];
 	GetModuleFileNameW(hModule, DLLPath, MAX_PATH);
 
+	std::filesystem::path LogPath{DLLPath};
+	LogPath = LogPath.parent_path() / L"forerunner.log";
+
+	LogFile.open(LogPath.c_str(), std::ios::out);
+
+	if (LogFile.is_open())
+	{
+		LogManager::AddConsumer(FileLogConsumer);
+	}
+
 	ModuleHandler::Get().Initialise(DLLPath);
 
 	while (true)
@@ -53,13 +77,17 @@ DWORD WINAPI MainLoop(HMODULE hModule)
 			break;
 	}
 
-
 	// Cleanup
 	if (fp)
 	{
 		fclose(fp);
 	}
 	FreeConsole();
+
+	if (LogFile.is_open())
+	{
+		LogFile.close();
+	}
 
 	return 0;
 }

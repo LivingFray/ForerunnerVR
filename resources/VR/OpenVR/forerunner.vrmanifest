@@ -1,0 +1,14 @@
+{
+	"source" : "builtin",
+	"applications": [{
+		"application_type": "vrgame",
+		"app_key": "livingfray.forerunner",
+		"action_manifest_path": "actions.json",
+		"image_path": "icon.png",
+		"strings": {
+			"en_us": {
+				"name": "Halo: The Master Chief Collection"
+			}
+		}
+	}]
+}

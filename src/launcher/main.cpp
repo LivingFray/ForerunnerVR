@@ -4,9 +4,10 @@
 #include <windows.h>
 #include <d3d11.h>
 #include <format>
+#include <dwmapi.h>
 #include "../../resources/resource.h"
 #include "launcher.h"
-#include <dwmapi.h>
+#include "common/utils/utils.h"
 
 static ID3D11Device* D3D11Device;
 static ID3D11DeviceContext* D3D11DeviceContext;
@@ -87,6 +88,10 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInsance, LPSTR lpCmdLine, int nShowCmd)
 {
+	wchar_t DLLPath[MAX_PATH];
+	GetModuleFileNameW(NULL, DLLPath, MAX_PATH);
+	ForerunnerPath = std::filesystem::path{DLLPath};
+	
 	// Create launcher window
 	WNDCLASSEXW WinClass = {};
 	WinClass.cbSize = sizeof(WNDCLASSEXW);

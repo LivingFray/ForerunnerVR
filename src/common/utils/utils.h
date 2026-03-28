@@ -1,4 +1,5 @@
 #pragma once
+#include <filesystem>
 
 template <typename F>
 struct ScopeExit
@@ -26,6 +27,14 @@ ScopeExit<F> MakeScopeExit(F f)
 
 constexpr float Deg2Rad(float Degrees)
 {
-	constexpr float ConversionRatio = (3.1415926535f) / 180.0f;
+	constexpr float ConversionRatio = 3.1415926535f / 180.0f;
 	return Degrees * ConversionRatio;
 }
+
+constexpr float Rad2Deg(float Radians)
+{
+	constexpr float ConversionRatio = 180.0f / 3.1415926535f;
+	return Radians * ConversionRatio;
+}
+
+inline std::filesystem::path ForerunnerPath;

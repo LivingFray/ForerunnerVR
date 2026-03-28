@@ -57,13 +57,29 @@ set_property(TARGET Forerunner PROPERTY CXX_STANDARD 20)
 
 target_link_libraries(Forerunner PRIVATE 
 	d3d11.lib
+	${CMAKE_SOURCE_DIR}/lib/openvr/openvr_api.lib
 )
 
 target_include_directories(Forerunner PRIVATE
 	lib/imgui
 	lib/minhook/include
+	lib/openvr
 )
 
 target_include_directories(Forerunner PUBLIC
 	src
 )
+
+# Copy openvr.dll to same directory as exe
+add_custom_command(
+        TARGET Forerunner POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy
+                ${CMAKE_SOURCE_DIR}/lib/openvr/openvr_api.dll
+                ${CMAKE_BINARY_DIR}/bin/openvr_api.dll)
+
+# Copy VR resources to same directory as exe
+add_custom_command(
+        TARGET Forerunner POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory 
+                ${CMAKE_SOURCE_DIR}/resources/VR
+                ${CMAKE_CURRENT_BINARY_DIR}/bin/VR)

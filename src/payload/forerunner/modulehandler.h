@@ -53,6 +53,7 @@ public:
 protected:
 	GameModule LastGameId = GameModule::NONE;
 	wchar_t DLLPath[MAX_PATH];
+	HMODULE OpenVRHandle = nullptr;
 };
 
 PATCH("", 0x1efd44, "48 89 5c 24 10 57 48 83 ec 30 48 8b 05 ?? ?? ?? ?? 48 33 c4 48 89 44 24 28 48 8b d9 48 63 fa 48 8b 0d ?? ?? ?? ?? 48 85 c9 74 ?? 39 bb", CreateGameEngine, void, void* GameState, GameModule GameId);
