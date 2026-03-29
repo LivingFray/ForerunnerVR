@@ -28,8 +28,12 @@ bool DeltaModule::Initialise()
 	}
 
 	// TODO: This should be done at a higher level (i.e. in a forerunner module)
+#ifdef USE_EMULATOR
+	VR = new EmulatedVR();
+#else
 	VR = new OpenVR();
-	//VR = new EmulatedVR();
+#endif
+
 	VR->EarlyInit();
 
 	if (!FindGlobals())

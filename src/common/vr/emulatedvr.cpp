@@ -124,10 +124,10 @@ void EmulatedVR::SubmitEye(EVR_Eye Eye, ID3D11Texture2D* Texture, const VR_Bound
 
 		D3D11_BOX srcBox{};
 		srcBox.left = static_cast<UINT>(ViewBounds.x * srcDesc.Width);
-		srcBox.top = static_cast<UINT>(ViewBounds.y * srcDesc.Height + ViewBounds.h * srcDesc.Height);
+		srcBox.top = srcDesc.Height - static_cast<UINT>(ViewBounds.y * srcDesc.Height + ViewBounds.h * srcDesc.Height);
 		srcBox.front = 0;
 		srcBox.right = static_cast<UINT>(ViewBounds.x * srcDesc.Width + ViewBounds.w * srcDesc.Width);
-		srcBox.bottom = static_cast<UINT>(ViewBounds.y * srcDesc.Height);
+		srcBox.bottom = srcDesc.Height - static_cast<UINT>(ViewBounds.y * srcDesc.Height);
 		srcBox.back = 1;
 
 		UINT StartX = (Eye == EVR_Eye::Left) ? 0 : VR_WIDTH;

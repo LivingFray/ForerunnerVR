@@ -12,6 +12,16 @@ file (GLOB MINHOOK_SRC
 
 add_library(ForerunnerPayload SHARED ${PAYLOAD_SRC} ${MINHOOK_SRC})
 
+# Option to build the payload with the VR emulator enabled. This exposes a CMake
+# cache variable so it can be toggled from Visual Studio's CMake settings or
+# by passing -DUSE_EMULATOR=ON to the configure step.
+option(USE_EMULATOR "Build ForerunnerPayload targeting vr emulator (defines USE_EMULATOR)" OFF)
+
+# When enabled, define the preprocessor macro for the payload target.
+if(USE_EMULATOR)
+    target_compile_definitions(ForerunnerPayload PRIVATE USE_EMULATOR)
+endif()
+
 # Output the DLL next to the executable
 set(PAYLOAD_OUTPUT_DIR "${CMAKE_BINARY_DIR}/bin")
 set_target_properties(ForerunnerPayload PROPERTIES
