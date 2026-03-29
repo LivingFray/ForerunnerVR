@@ -1,4 +1,5 @@
 #include "openvr.h"
+#include "common/utils/matrices.h"
 #include "common/utils/utils.h"
 #include <filesystem>
 
@@ -6,6 +7,18 @@
 #define NOMINMAX
 #define UNICODE
 #include <windows.h>
+
+Matrix4 ConvertSteamVRMatrixToMatrix4(const vr::HmdMatrix34_t& matPose)
+{
+	Matrix4 matrixObj(
+		matPose.m[2][2], matPose.m[0][2], -matPose.m[1][2], 0.0,
+		matPose.m[2][0], matPose.m[0][0], -matPose.m[1][0], 0.0,
+		-matPose.m[2][1], -matPose.m[0][1], matPose.m[1][1], 0.0,
+		-matPose.m[2][3], -matPose.m[0][3], matPose.m[1][3], 1.0f
+	);
+
+	return matrixObj;
+}
 
 bool OpenVR::EarlyInit()
 {
@@ -105,7 +118,7 @@ bool OpenVR::EarlyInit()
 	RecommendedHeight = static_cast<uint32_t>(RecommendedHeight / (std::max)(TextureBounds[0].vMax - TextureBounds[0].vMin, TextureBounds[1].vMax - TextureBounds[1].vMin));
 
 	FORERUNNER_LOG(OpenVR, "Stretched Width/Height from {}x{} to {}x{}", RealWidth, RealHeight, RecommendedWidth, RecommendedHeight);
-	FORERUNNER_LOG(OpenVR, "Desired vertical fov = {} Desired aspect ratio = ", Rad2Deg(VerticalFieldOfView), AspectRatio);
+	FORERUNNER_LOG(OpenVR, "Desired vertical fov = {} Desired aspect ratio = {}", Rad2Deg(VerticalFieldOfView), AspectRatio);
 
 	FORERUNNER_LOG(OpenVR, "VR systems created successfully");
 
@@ -114,50 +127,93 @@ bool OpenVR::EarlyInit()
 
 bool OpenVR::Init()
 {
-	return false;
+	return true;
 }
 
 void OpenVR::Shutdown()
 {
+	vr::VR_Shutdown();
 }
 
 void OpenVR::Update(float DeltaTime)
 {
+	if (!VRCompositor)
+	{
+		return;
+	}
+
+	VRCompositor->WaitGetPoses(RenderPoses, vr::k_unMaxTrackedDeviceCount, GamePoses, vr::k_unMaxTrackedDeviceCount);
 }
 
-void OpenVR::SubmitEye(EVR_Eye Eye, ID3D11RenderTargetView* RenderTargetView, const VR_Bounds& ViewBounds)
+void OpenVR::SubmitEye(EVR_Eye Eye, ID3D11Texture2D* Texture, const VR_Bounds& ViewBounds)
 {
+	// TODO: Query if frame is finished rendering first?
+
+	vr::Texture_t EyeTexture{(void*)Texture, vr::TextureType_DirectX, vr::ColorSpace_Auto};
+
+	vr::VRTextureBounds_t& EyeBounds = TextureBounds[static_cast<int>(Eye)];
+
+	vr::VRTextureBounds_t FinalTextureBounds
+	{
+		.uMin = ViewBounds.x + EyeBounds.uMin * ViewBounds.w,
+		.vMin = ViewBounds.y + EyeBounds.vMin * ViewBounds.h,
+		.uMax = ViewBounds.x + EyeBounds.uMax * ViewBounds.w,
+		.vMax = ViewBounds.y + EyeBounds.vMax * ViewBounds.h
+	};
+
+	vr::EVRCompositorError Error = VRCompositor->Submit(static_cast<vr::EVREye>(Eye), &EyeTexture, &FinalTextureBounds, vr::Submit_Default);
+
+	if (Error != vr::VRCompositorError_None)
+	{
+		FORERUNNER_WARN(OpenVR, "Could not submit {} eye texture : {}", Eye, static_cast<int>(Error));
+	}
+
+	VRCompositor->PostPresentHandoff();
 }
 
-void OpenVR::SetDevice(ID3D11Device* Device)
+void OpenVR::SetDevice(ID3D11Device* InDevice)
 {
+	Device = InDevice;
 }
 
-void OpenVR::SetDeviceContext(ID3D11DeviceContext* Context)
+void OpenVR::SetDeviceContext(ID3D11DeviceContext* InContext)
 {
+	Context = InContext;
 }
 
-float OpenVR::GetDesiredWidth() const
+int32_t OpenVR::GetDesiredWidth() const
 {
-	return 0.0f;
+	return RecommendedWidth;
 }
 
-float OpenVR::GetDesiredHeight() const
+int32_t OpenVR::GetDesiredHeight() const
 {
-	return 0.0f;
+	return RecommendedHeight;
 }
 
 float OpenVR::GetVerticalFieldOfView(EVR_Eye Eye) const
 {
-	return 0.0f;
+	return VerticalFieldOfView;
 }
 
-VR::Matrix4x4 OpenVR::GetHMDTransform() const
+Matrix4 OpenVR::GetHMDTransform() const
 {
-	return VR::Matrix4x4();
+	if (!VRSystem)
+	{
+		FORERUNNER_WARN(OpenVR, "Attempted to get HMD transform before initialising");
+		return Matrix4();
+	}
+
+	return ConvertSteamVRMatrixToMatrix4(RenderPoses[vr::k_unTrackedDeviceIndex_Hmd].mDeviceToAbsoluteTracking);
 }
 
-VR::Matrix4x4 OpenVR::GetEyeTransform(EVR_Eye Eye) const
+Matrix4 OpenVR::GetEyeTransform(EVR_Eye Eye) const
 {
-	return VR::Matrix4x4();
+	if (!VRSystem)
+	{
+		FORERUNNER_WARN(OpenVR, "Attempted to get {} eye transform before initialising", Eye);
+		return Matrix4();
+	}
+
+	return ConvertSteamVRMatrixToMatrix4(VRSystem->GetEyeToHeadTransform(static_cast<vr::EVREye>(Eye))).invertAffine();
 }

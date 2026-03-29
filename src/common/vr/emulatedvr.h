@@ -1,6 +1,7 @@
 #pragma once
 #include "IVR.h"
-#include "common/vr/matrices.h"
+#include "common/utils/matrices.h"
+#include "common/utils/vectors.h"
 #include "common/utils/log.h"
 
 #define WIN32_LEAN_AND_MEAN
@@ -20,14 +21,14 @@ public:
 	bool Init() override;
 	void Shutdown() override;
 	void Update(float DeltaTime) override;
-	void SubmitEye(EVR_Eye Eye, ID3D11RenderTargetView* RenderTargetView, const VR_Bounds& ViewBounds) override;
+	void SubmitEye(EVR_Eye Eye, struct ID3D11Texture2D* Texture, const VR_Bounds& ViewBounds) override;
 	void SetDevice(ID3D11Device* Device) override;
 	void SetDeviceContext(ID3D11DeviceContext* Context) override;
-	float GetDesiredWidth() const override;
-	float GetDesiredHeight() const override;
+	int32_t GetDesiredWidth() const override;
+	int32_t GetDesiredHeight() const override;
 	virtual float GetVerticalFieldOfView(EVR_Eye Eye) const override;
-	virtual VR::Matrix4x4 GetHMDTransform() const override;
-	virtual VR::Matrix4x4 GetEyeTransform(EVR_Eye Eye) const override;
+	virtual Matrix4 GetHMDTransform() const override;
+	virtual Matrix4 GetEyeTransform(EVR_Eye Eye) const override;
 
 protected:
 	bool CreateVRWindow();
@@ -41,5 +42,5 @@ protected:
 
 	float CameraYaw = 0.0f;
 	float CameraPitch = 0.0f;
-	VR::Vector3 CameraOffset = VR::Vector3(0.0f, 0.0f, 0.05f);
+	Vector3 CameraOffset = Vector3(0.0f, 0.0f, 0.05f);
 };

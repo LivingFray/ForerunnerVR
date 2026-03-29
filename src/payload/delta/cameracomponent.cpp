@@ -7,26 +7,28 @@
 #include "payload/delta/blam/render/render_cameras.h"
 #include "payload/delta/blam/simulation/simulation.h"
 
+#include "common/utils/utils.h"
+#include "common/utils/matrices.h"
+#include "common/utils/vectors.h"
 #include "common/vr/IVR.h"
 
 void CameraComponent::UpdatePlayerCamera(simulation_update* update)
 {
 	player_action& action = update->player_actions[0];
 
-	const VR::Matrix4x4 HMDMatrix = DeltaModule::Get().VR->GetHMDTransform();
+	const Matrix4 HMDMatrix = GetCameraTransform();
 
 	// Extract the forward vector from the HMD matrix
-	const VR::Vector3 HMDFacing = {HMDMatrix.m[0][0], HMDMatrix.m[1][0], HMDMatrix.m[2][0]};
+	Vector3 HMDFacing = HMDMatrix.getLeftAxis();
 
 	// Normalize the facing vector (shouldn't matter in most cases)
-	VR::Vector3 NormalizedFacing = HMDFacing;
-	NormalizedFacing.SafeNormalize();
+	HMDFacing.normalize();
 
 	// Calculate yaw (rotation around the vertical axis)
-	const float Yaw = atan2f(NormalizedFacing.y, NormalizedFacing.x);
+	const float Yaw = atan2f(HMDFacing.y, HMDFacing.x);
 
 	// Calculate pitch (rotation around the horizontal axis)
-	const float Pitch = atan2f(NormalizedFacing.z, sqrt(NormalizedFacing.x * NormalizedFacing.x + NormalizedFacing.y * NormalizedFacing.y));
+	const float Pitch = atan2f(HMDFacing.z, sqrt(HMDFacing.x * HMDFacing.x + HMDFacing.y * HMDFacing.y));
 
 	// Update the player's action rotation
 	action.rotation.yaw = Yaw;
@@ -42,36 +44,50 @@ void CameraComponent::UpdateRenderCamera(struct render_window* render_window, in
 	render_window->rasterizer_camera.vertical_field_of_view = FOV;
 	render_window->render_camera.vertical_field_of_view = FOV;
 
-	VR::Vector3 CameraPos = VR::Cast<VR::Vector3>(render_window->rasterizer_camera.position);
+	Vector3 CameraPos = SameCast<Vector3>(render_window->rasterizer_camera.position);
 
 	// TODO: HMD Transform
 	// Needs to handle roomscale movement + apply remainder to camera
-	// Also needs to account for resetting orientation/centre
 	// Also also needs to account for default eye height vs ground
 
 	// TODO: Cutscenes
 	// TODO: Vehicles
 
-	VR::Matrix4x4 EyeMatrix = VR::Matrix4x4::Scale(METRES_TO_WORLD) * DeltaModule::Get().VR->GetHMDTransform() * DeltaModule::Get().VR->GetEyeTransform(Eye);
+	Matrix4 EyeMatrix = Matrix4().scale(METRES_TO_WORLD) * GetCameraTransform() * DeltaModule::Get().VR->GetEyeTransform(Eye);
 
 	// Add eye translation
-	CameraPos = CameraPos + VR::Vector3::FromVector4(EyeMatrix * VR::Vector4::Identity());
+	CameraPos = CameraPos + Vector3FromVector4(EyeMatrix * Vector4FromPoint(Vector3()));
 
-	const VR::Vector3 WorldForward(1.0f, 0.0f, 0.0f);
-	const VR::Vector3 WorldUp(0.0f, 0.0f, 1.0f);
+	const Vector3 WorldForward(1.0f, 0.0f, 0.0f);
+	const Vector3 WorldUp(0.0f, 0.0f, 1.0f);
 
-	VR::Vector3 CameraForward = VR::Vector3::FromVector4(EyeMatrix * VR::Vector4::FromVector(WorldForward));
-	VR::Vector3 CameraUp = VR::Vector3::FromVector4(EyeMatrix * VR::Vector4::FromVector(WorldUp));
+	Vector3 CameraForward = Vector3FromVector4(EyeMatrix * Vector4FromVector(WorldForward));
+	Vector3 CameraUp = Vector3FromVector4(EyeMatrix * Vector4FromVector(WorldUp));
 
-	CameraForward.SafeNormalize();
-	CameraUp.SafeNormalize();
+	CameraForward.normalize();
+	CameraUp.normalize();
 
-	render_window->rasterizer_camera.position = VR::Cast<real_point3d>(CameraPos);
-	render_window->render_camera.position = VR::Cast<real_point3d>(CameraPos);
+	render_window->rasterizer_camera.position = SameCast<real_point3d>(CameraPos);
+	render_window->render_camera.position = SameCast<real_point3d>(CameraPos);
 
-	render_window->rasterizer_camera.forward = VR::Cast<real_vector3d>(CameraForward);
-	render_window->render_camera.forward = VR::Cast<real_vector3d>(CameraForward);
+	render_window->rasterizer_camera.forward = SameCast<real_vector3d>(CameraForward);
+	render_window->render_camera.forward = SameCast<real_vector3d>(CameraForward);
 
-	render_window->rasterizer_camera.up = VR::Cast<real_vector3d>(CameraUp);
-	render_window->render_camera.up = VR::Cast<real_vector3d>(CameraUp);
+	render_window->rasterizer_camera.up = SameCast<real_vector3d>(CameraUp);
+	render_window->render_camera.up = SameCast<real_vector3d>(CameraUp);
+}
+
+void CameraComponent::RecentreCamera()
+{
+	Matrix4 CurrentTransform = DeltaModule::Get().VR->GetHMDTransform();
+
+	OffsetYaw = 0.0f; // TODO: Extract yaw
+	OffsetLocation = Vector3FromVector4(CurrentTransform * Vector4FromPoint(Vector3()));
+
+	OffsetMatrix = Matrix4().translate(-OffsetLocation).rotateZ(-OffsetYaw);
+}
+
+Matrix4 CameraComponent::GetCameraTransform()
+{
+	return OffsetMatrix * DeltaModule::Get().VR->GetHMDTransform();
 }

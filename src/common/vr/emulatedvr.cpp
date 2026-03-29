@@ -4,8 +4,8 @@
 #include <dxgi1_2.h>
 #include <numbers>
 
-static constexpr int VR_WIDTH = 800;
-static constexpr int VR_HEIGHT = 600;
+static constexpr int32_t VR_WIDTH = 800;
+static constexpr int32_t VR_HEIGHT = 600;
 
 bool EmulatedVR::EarlyInit()
 {
@@ -88,24 +88,14 @@ void EmulatedVR::Update(float DeltaTime)
 	CameraPitch = std::max(CameraPitch, -std::numbers::pi_v<float> * 0.5f);
 }
 
-void EmulatedVR::SubmitEye(EVR_Eye Eye, ID3D11RenderTargetView* RenderTargetView, const VR_Bounds& ViewBounds)
+void EmulatedVR::SubmitEye(EVR_Eye Eye, ID3D11Texture2D* Texture, const VR_Bounds& ViewBounds)
 {
 	{
-		ID3D11Resource* srcResource = nullptr;
-		RenderTargetView->GetResource(&srcResource);
-
-		if (!srcResource)
-		{
-			FORERUNNER_ERROR(EmuVR, "Can't get resource from RenderTargetView {:#08x})", reinterpret_cast<int64_t>(RenderTargetView));
-			return;
-		}
-
-		ID3D11Texture2D* srcTex = nullptr;
-		srcResource->QueryInterface(__uuidof(ID3D11Texture2D), (void**)&srcTex);
+		ID3D11Texture2D* srcTex = Texture;
 
 		if (!srcTex)
 		{
-			FORERUNNER_ERROR(EmuVR, "Can't get texture from RenderTargetView {:#08x})", reinterpret_cast<int64_t>(RenderTargetView));
+			FORERUNNER_ERROR(EmuVR, "SubmitEye called with invalid Texture");
 			return;
 		}
 
@@ -134,19 +124,17 @@ void EmulatedVR::SubmitEye(EVR_Eye Eye, ID3D11RenderTargetView* RenderTargetView
 
 		D3D11_BOX srcBox{};
 		srcBox.left = static_cast<UINT>(ViewBounds.x * srcDesc.Width);
-		srcBox.top = static_cast<UINT>(ViewBounds.y * srcDesc.Height);
+		srcBox.top = static_cast<UINT>(ViewBounds.y * srcDesc.Height + ViewBounds.h * srcDesc.Height);
 		srcBox.front = 0;
 		srcBox.right = static_cast<UINT>(ViewBounds.x * srcDesc.Width + ViewBounds.w * srcDesc.Width);
-		srcBox.bottom = static_cast<UINT>(ViewBounds.y * srcDesc.Height + ViewBounds.h * srcDesc.Height);
+		srcBox.bottom = static_cast<UINT>(ViewBounds.y * srcDesc.Height);
 		srcBox.back = 1;
 
 		UINT StartX = (Eye == EVR_Eye::Left) ? 0 : VR_WIDTH;
 
 		DeviceContext->CopySubresourceRegion(dstResource, 0, StartX, 0, 0, srcTex, 0, &srcBox);
 
-		srcTex->Release();
 		dstTex->Release();
-		srcResource->Release();
 		dstResource->Release();
 	}
 
@@ -170,12 +158,12 @@ void EmulatedVR::SetDeviceContext(ID3D11DeviceContext* InContext)
 	this->DeviceContext = InContext;
 }
 
-float EmulatedVR::GetDesiredWidth() const
+int32_t EmulatedVR::GetDesiredWidth() const
 {
 	return VR_WIDTH;
 }
 
-float EmulatedVR::GetDesiredHeight() const
+int32_t EmulatedVR::GetDesiredHeight() const
 {
 	return VR_HEIGHT;
 }
@@ -185,25 +173,25 @@ float EmulatedVR::GetVerticalFieldOfView(EVR_Eye Eye) const
     return Deg2Rad(90.0f);
 }
 
-VR::Matrix4x4 EmulatedVR::GetHMDTransform() const
+Matrix4 EmulatedVR::GetHMDTransform() const
 {
 	// Convert pitch and yaw into rotation transform, then add camera offset
-	VR::Matrix4x4 Rotation = VR::Matrix4x4::RotationZ(CameraYaw) * VR::Matrix4x4::RotationY(CameraPitch);
+	Matrix4 Rotation = Matrix4().rotateZ(Rad2Deg(-CameraYaw)) * Matrix4().rotateY(Rad2Deg(-CameraPitch));
 
-	return Rotation * VR::Matrix4x4::Translation(CameraOffset);
+	return Rotation * Matrix4().translate(CameraOffset);
 }
 
-VR::Matrix4x4 EmulatedVR::GetEyeTransform(EVR_Eye Eye) const
+Matrix4 EmulatedVR::GetEyeTransform(EVR_Eye Eye) const
 {
 	switch (Eye)
 	{
 		case EVR_Eye::Left:
-			return VR::Matrix4x4::Translation(0.0f, -0.5f, 0.0f);
+			return Matrix4().translate(0.0f, -0.5f, 0.0f);
 		case EVR_Eye::Right:
-			return VR::Matrix4x4::Translation(0.0f, 0.5f, 0.0f);
+			return Matrix4().translate(0.0f, 0.5f, 0.0f);
 		default:
 			FORERUNNER_WARN(EmuVR, "Unexpected value for Eye passed to GetEyeTransform: {}", static_cast<int>(Eye));
-			return VR::Matrix4x4::Identity();
+			return Matrix4();
 	}
 }
 

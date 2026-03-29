@@ -1,6 +1,6 @@
 #pragma once
 #include <cstdint>
-#include "Matrices.h"
+#include "../utils/matrices.h"
 
 enum class EVR_Eye : uint8_t
 {
@@ -30,19 +30,37 @@ public:
 	// Called every frame
 	virtual void Update(float DeltaTime) = 0;
 	// Called when the game has a new frame to submit for an eye, ViewBounds defines which portion of the render target holds the current eye
-	virtual void SubmitEye(EVR_Eye Eye, struct ID3D11RenderTargetView* RenderTargetView, const VR_Bounds& ViewBounds = VR_Bounds{ .x = 0.0f, .y = 0.0f, .w = 1.0f, .h = 1.0f}) = 0;
+	virtual void SubmitEye(EVR_Eye Eye, struct ID3D11Texture2D* Texture, const VR_Bounds& ViewBounds = VR_Bounds{ .x = 0.0f, .y = 0.0f, .w = 1.0f, .h = 1.0f}) = 0;
 
 	virtual void SetDevice(struct ID3D11Device* Device) = 0;
 	virtual void SetDeviceContext(struct ID3D11DeviceContext* Context) = 0;
 
 	// Get the desired width of the render target for one eye
-	virtual float GetDesiredWidth() const = 0;
+	virtual int32_t GetDesiredWidth() const = 0;
 	// Get the desired height of the render target for one eye
-	virtual float GetDesiredHeight() const = 0;
+	virtual int32_t GetDesiredHeight() const = 0;
 	// Get the vertical field of view (in radians) the current eye should be rendered at
 	virtual float GetVerticalFieldOfView(EVR_Eye Eye) const = 0;
 	// Get the transform of the HMD, relative to its origin. Units are meters, coordinate system is forward = +x, right = +y, up = +z // TODO: Check that is the correct coordinate system!
-	virtual VR::Matrix4x4 GetHMDTransform() const = 0;
+	virtual Matrix4 GetHMDTransform() const = 0;
 	// Get the transform of the requested eye, relative to the HMD. Units are meters, coordinate system is forward = +x, right = +y, up = +z // TODO: Check that is the correct coordinate system!
-	virtual VR::Matrix4x4 GetEyeTransform(EVR_Eye Eye) const = 0;
+	virtual Matrix4 GetEyeTransform(EVR_Eye Eye) const = 0;
+};
+
+
+
+// Formatting
+#include <format>
+template <>
+struct std::formatter<EVR_Eye> : std::formatter<std::string_view>
+{
+	constexpr auto parse(std::format_parse_context& ctx)
+	{
+		return ctx.begin();
+	}
+
+	auto format(EVR_Eye e, std::format_context& ctx) const
+	{
+		return std::format_to(ctx.out(), "{}", e == EVR_Eye::Left ? "Left" : "Right");
+	}
 };

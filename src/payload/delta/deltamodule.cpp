@@ -28,7 +28,8 @@ bool DeltaModule::Initialise()
 	}
 
 	// TODO: This should be done at a higher level (i.e. in a forerunner module)
-	VR = new EmulatedVR();
+	VR = new OpenVR();
+	//VR = new EmulatedVR();
 	VR->EarlyInit();
 
 	if (!FindGlobals())
@@ -60,8 +61,6 @@ bool DeltaModule::Initialise()
 	// TODO: These might need moving too
 
 	//Render.Init();
-
-	(new OpenVR())->EarlyInit();
 
 	return true;
 }
@@ -102,6 +101,8 @@ void DeltaModule::Present()
 		bHasInit = true;
 
 		VR->Update(g_delta_time());
+
+		Camera.RecentreCamera();
 	}
 
 	Render.Draw();
