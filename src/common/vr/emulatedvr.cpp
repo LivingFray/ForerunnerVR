@@ -4,8 +4,8 @@
 #include <dxgi1_2.h>
 #include <numbers>
 
-static constexpr int32_t VR_WIDTH = 800;
-static constexpr int32_t VR_HEIGHT = 600;
+static constexpr int32_t VR_WIDTH = 1600;
+static constexpr int32_t VR_HEIGHT = 1200;
 
 bool EmulatedVR::EarlyInit()
 {

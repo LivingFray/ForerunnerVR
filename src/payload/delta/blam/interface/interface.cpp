@@ -42,11 +42,14 @@ void interface_draw_screen::Patch()
 	DeltaModule::Get().UI.UpdateHUD();
 
 	ID3D11RenderTargetView* ActiveRenderTarget = g_output_target();
+	D3D11_VIEWPORT Viewport;
+	UINT NumViewports = 1;
 
 	g_output_target() = DeltaModule::Get().Render.GetUITargetView();
 
 	// HUD messaging just assumes the render target is set, while all other UI explicity sets the target, so we need to manually set it to our target
 	g_device_context()->OMSetRenderTargets(1, &(g_output_target()), g_output_depth_stencil_view());
+	g_device_context()->RSGetViewports(&NumViewports, &Viewport);
 
 	rectangle2d OriginalViewBounds = g_render_camera().viewport_bounds;
 	rectangle2d OriginalWindowBounds = g_render_camera().window_bounds;
@@ -81,12 +84,13 @@ void interface_draw_screen::Patch()
 	g_render_camera().viewport_bounds = OriginalViewBounds;
 	g_render_camera().window_bounds = OriginalWindowBounds;
 	global_window_parameters().camera.viewport_bounds = OriginalUIViewportBounds;
-	global_window_parameters().camera.viewport_bounds = OriginalUIWindowBounds;
+	global_window_parameters().camera.window_bounds = OriginalUIWindowBounds;
 
 	g_output_target() = ActiveRenderTarget;
 
 	// Restore the render target so subsequent calls go to the right screen (e.g. screen flashes/fades)
 	g_device_context()->OMSetRenderTargets(1, &(g_output_target()), g_output_depth_stencil_view());
+	g_device_context()->RSSetViewports(NumViewports, &Viewport);
 
 	DeltaModule::Get().bRenderingHUD = false;
 }
