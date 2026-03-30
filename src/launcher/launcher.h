@@ -33,6 +33,11 @@ private:
 	void RefreshHaloProcess();
 	void CalculatePayloadPath();
 
+	void StartLaunch(float Delay);
+	void CancelLaunch();
+	void UpdateLaunchTime(float DeltaTime);
+	void LaunchHalo();
+
 	ELauncherWindow ActiveWindow = ELauncherWindow::Main;
 
 	struct ID3D11Device* Device;
@@ -49,6 +54,10 @@ private:
 
 	std::string PayloadPath;
 
+	bool bAutoLaunch = true;
 	bool bAutoInject = true;
 	bool bCloseOnInject = true;
+
+	bool bIsLaunching = false;
+	float LaunchDelay = 0.0f;
 };

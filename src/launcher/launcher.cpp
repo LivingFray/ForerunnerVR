@@ -10,7 +10,7 @@
 #include <d3d11.h>
 #include <chrono>
 #include <filesystem>
-
+#include <shellapi.h>
 
 void Launcher::Initialise(HWND Window, ID3D11Device* InDevice, ID3D11DeviceContext* InContext, IDXGISwapChain* InSwapChain)
 {
@@ -245,6 +245,34 @@ void Launcher::DrawMainWindow()
 		ImGui::TextColored(ImVec4(0.8f, 0.0f, 0.0f, 1.0f), "Payload DLL not found, check Forerunner was installed correctly");
 	}
 
+	if (bAutoLaunch && !bIsLaunching)
+	{
+		StartLaunch(3.0f);
+		bAutoLaunch = false;
+	}
+
+	ImGui::BeginDisabled(bIsHaloRunning);
+	if (bIsLaunching)
+	{
+		if (ImGui::Button(std::format("Cancel Launch ({}s)", round(LaunchDelay)).c_str()))
+		{
+			CancelLaunch();
+		}
+	}
+	else
+	{
+		if (ImGui::Button("Launch Game"))
+		{
+			StartLaunch(1.0f);
+		}
+	}
+	ImGui::EndDisabled();
+	
+	if (bIsLaunching)
+	{
+		UpdateLaunchTime(ImGui::GetIO().DeltaTime);
+	}
+
 	const bool bCanInject = bIsHaloRunning && !PayloadPath.empty() && InjectedHaloProcessId != LastHaloProcessId;
 	const bool bShouldAutoInject = bAutoInject && bCanInject; // This will be a frame behind from any changes to the Auto Inject checkbox, but that is fine
 
@@ -263,6 +291,7 @@ void Launcher::DrawMainWindow()
 	}
 	ImGui::EndDisabled();
 
+	ImGui::Checkbox("Auto launch", &bAutoLaunch);
 	ImGui::Checkbox("Auto inject", &bAutoInject);
 	ImGui::Checkbox("Close on inject", &bCloseOnInject);
 
@@ -321,4 +350,46 @@ void Launcher::CalculatePayloadPath()
 	{
 		PayloadPath = "";
 	}
+}
+
+void Launcher::StartLaunch(float Delay)
+{
+	bIsLaunching = true;
+	LaunchDelay = Delay;
+	if (LaunchDelay <= 0.0f)
+	{
+		LaunchHalo();
+	}
+}
+
+void Launcher::CancelLaunch()
+{
+	bIsLaunching = false;
+	LaunchDelay = 0.0f;
+}
+
+void Launcher::UpdateLaunchTime(float DeltaTime)
+{
+	if (!bIsLaunching)
+	{
+		return;
+	}
+
+	LaunchDelay -= DeltaTime;
+
+	if (LaunchDelay <= 0.0f)
+	{
+		LaunchHalo();
+	}
+}
+
+void Launcher::LaunchHalo()
+{
+	bIsLaunching = false;
+	LaunchDelay = 0.0f;
+
+	// TODO: Support non-steam options (xbox launcher, directly from exe)
+	const char* steamCommand = "steam://launch/976730/option2";
+
+	ShellExecuteA(NULL, "open", steamCommand, NULL, NULL, SW_SHOWNORMAL);
 }
