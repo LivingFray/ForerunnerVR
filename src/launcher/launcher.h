@@ -58,6 +58,7 @@ private:
 	bool bAutoInject = true;
 	bool bCloseOnInject = true;
 
+	bool bHasAutoLaunched = false;
 	bool bIsLaunching = false;
 	float LaunchDelay = 0.0f;
 };

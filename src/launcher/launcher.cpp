@@ -245,10 +245,10 @@ void Launcher::DrawMainWindow()
 		ImGui::TextColored(ImVec4(0.8f, 0.0f, 0.0f, 1.0f), "Payload DLL not found, check Forerunner was installed correctly");
 	}
 
-	if (bAutoLaunch && !bIsLaunching)
+	if (bAutoLaunch && !bIsLaunching && !bHasAutoLaunched)
 	{
 		StartLaunch(3.0f);
-		bAutoLaunch = false;
+		bHasAutoLaunched = true;
 	}
 
 	ImGui::BeginDisabled(bIsHaloRunning);
