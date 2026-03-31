@@ -1,5 +1,5 @@
 #pragma once
-#include "blam/math/integer_math.h"
+#include "payload/delta/blam/math/integer_math.h"
 
 struct rasterizer_globals
 {

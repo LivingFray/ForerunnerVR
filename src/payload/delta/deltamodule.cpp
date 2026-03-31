@@ -151,6 +151,7 @@ bool DeltaModule::FindGlobals()
 	bSuccess |= g_render_camera.Find();
 	bSuccess |= global_window_parameters.Find();
 	bSuccess |= g_delta_time.Find();
+	bSuccess |= g_hud_scaling.Find();
 
 	return bSuccess;
 }

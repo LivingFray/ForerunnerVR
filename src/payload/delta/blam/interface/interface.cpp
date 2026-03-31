@@ -1,6 +1,7 @@
 #include "interface.h"
 
 #include "payload/delta/blam/math/integer_math.h"
+#include "payload/delta/blam/rasterizer/rasterizer_globals.h"
 #include "payload/delta/blam/render/render.h"
 #include "payload/delta/blam/render/render_cameras.h"
 
@@ -45,17 +46,24 @@ void interface_draw_screen::Patch()
 	D3D11_VIEWPORT Viewport;
 	UINT NumViewports = 1;
 
+	// Replace the render target with the UI render target
 	g_output_target() = DeltaModule::Get().Render.GetUITargetView();
 
 	// HUD messaging just assumes the render target is set, while all other UI explicity sets the target, so we need to manually set it to our target
 	g_device_context()->OMSetRenderTargets(1, &(g_output_target()), g_output_depth_stencil_view());
 	g_device_context()->RSGetViewports(&NumViewports, &Viewport);
 
+	// Store window bounds
 	rectangle2d OriginalViewBounds = g_render_camera().viewport_bounds;
 	rectangle2d OriginalWindowBounds = g_render_camera().window_bounds;
+	rectangle2d OriginalUIViewportBounds = global_window_parameters().camera.viewport_bounds;
+	rectangle2d OriginalUIWindowBounds = global_window_parameters().camera.window_bounds;
+	int32_t OriginalSizeX = g_rasterizer_globals().size_x;
+	int32_t OriginalSizeY = g_rasterizer_globals().size_y;
 
-	DeltaModule::Get().bRenderingHUD = true;
+	hud_scaling OriginalHUDScale = g_hud_scaling();
 
+	// Modify window bounds to reflect UI scale
 	g_render_camera().viewport_bounds.x0 = 0;
 	g_render_camera().viewport_bounds.x1 = DeltaModule::Get().Render.GetUIWidth();
 	g_render_camera().viewport_bounds.y0 = 0;
@@ -65,9 +73,6 @@ void interface_draw_screen::Patch()
 	g_render_camera().window_bounds.x1 = DeltaModule::Get().Render.GetUIWidth();
 	g_render_camera().window_bounds.y0 = 0;
 	g_render_camera().window_bounds.y1 = DeltaModule::Get().Render.GetUIHeight();
-
-	rectangle2d OriginalUIViewportBounds = global_window_parameters().camera.viewport_bounds;
-	rectangle2d OriginalUIWindowBounds = global_window_parameters().camera.window_bounds;
 
 	global_window_parameters().camera.viewport_bounds.x0 = 0;
 	global_window_parameters().camera.viewport_bounds.x1 = DeltaModule::Get().Render.GetUIWidth();
@@ -79,20 +84,37 @@ void interface_draw_screen::Patch()
 	global_window_parameters().camera.window_bounds.y0 = 0;
 	global_window_parameters().camera.window_bounds.y1 = DeltaModule::Get().Render.GetUIHeight();
 
-	Original();
+	g_rasterizer_globals().size_x = DeltaModule::Get().Render.GetUIWidth();
+	g_rasterizer_globals().size_y = DeltaModule::Get().Render.GetUIHeight();
 
+	const float HUDScaleFactor = (DeltaModule::Get().Render.GetUIHeight() / static_cast<float>(OriginalSizeY));
+
+	// TODO: Text has its own scale factor (because of course it does)
+	g_hud_scaling().main = OriginalHUDScale.main * HUDScaleFactor;
+	g_hud_scaling().crosshair = OriginalHUDScale.crosshair * HUDScaleFactor;
+
+	// Draw the UI
+	DeltaModule::Get().bRenderingHUD = true;
+	Original();
+	DeltaModule::Get().bRenderingHUD = false;
+
+	// Restore window bounds
 	g_render_camera().viewport_bounds = OriginalViewBounds;
 	g_render_camera().window_bounds = OriginalWindowBounds;
 	global_window_parameters().camera.viewport_bounds = OriginalUIViewportBounds;
 	global_window_parameters().camera.window_bounds = OriginalUIWindowBounds;
+	g_rasterizer_globals().size_x = OriginalSizeX;
+	g_rasterizer_globals().size_y = OriginalSizeY;
 
+	g_hud_scaling() = OriginalHUDScale;
+
+	// Restore the original render target
 	g_output_target() = ActiveRenderTarget;
 
 	// Restore the render target so subsequent calls go to the right screen (e.g. screen flashes/fades)
 	g_device_context()->OMSetRenderTargets(1, &(g_output_target()), g_output_depth_stencil_view());
 	g_device_context()->RSSetViewports(NumViewports, &Viewport);
 
-	DeltaModule::Get().bRenderingHUD = false;
 }
 
 void interface_draw_splitscreen_borders::Patch()
