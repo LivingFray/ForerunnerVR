@@ -52,6 +52,17 @@ void interface_draw_screen::Patch()
 	// HUD messaging just assumes the render target is set, while all other UI explicity sets the target, so we need to manually set it to our target
 	g_device_context()->OMSetRenderTargets(1, &(g_output_target()), g_output_depth_stencil_view());
 	g_device_context()->RSGetViewports(&NumViewports, &Viewport);
+	D3D11_VIEWPORT UIViewport
+	{
+		.TopLeftX = 0.0f,
+		.TopLeftY = 0.0f,
+		.Width = static_cast<float>(DeltaModule::Get().Render.GetUIWidth()),
+		.Height = static_cast<float>(DeltaModule::Get().Render.GetUIHeight()),
+		.MinDepth = Viewport.MinDepth,
+		.MaxDepth = Viewport.MaxDepth,
+	};
+
+	g_device_context()->RSSetViewports(1, &UIViewport);
 
 	// Store window bounds
 	rectangle2d OriginalViewBounds = g_render_camera().viewport_bounds;
