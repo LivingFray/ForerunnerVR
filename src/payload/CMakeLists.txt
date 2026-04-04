@@ -37,6 +37,8 @@ target_include_directories(ForerunnerPayload PRIVATE
     ${CMAKE_SOURCE_DIR}/src
 	${CMAKE_SOURCE_DIR}/lib/minhook/include
 	${CMAKE_SOURCE_DIR}/lib/openvr
+	${CMAKE_SOURCE_DIR}/lib/json
+
 )
 
 target_link_libraries(ForerunnerPayload PRIVATE 

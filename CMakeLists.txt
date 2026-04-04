@@ -64,6 +64,7 @@ target_include_directories(Forerunner PRIVATE
 	lib/imgui
 	lib/minhook/include
 	lib/openvr
+	lib/json
 )
 
 target_include_directories(Forerunner PUBLIC

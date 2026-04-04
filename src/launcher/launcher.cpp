@@ -1,6 +1,8 @@
 // Forerunner
 #include "launcher.h"
+#include "common/config/config.h"
 #include "common/utils/inject.h"
+#include "common/utils/utils.h"
 // ImGui
 #include <imgui.h>
 #include <backends/imgui_impl_win32.h>
@@ -17,6 +19,8 @@ void Launcher::Initialise(HWND Window, ID3D11Device* InDevice, ID3D11DeviceConte
 	Device = InDevice;
 	Context = InContext;
 	SwapChain = InSwapChain;
+
+	Config::Load(ForerunnerPath / "config.json");
 
 	// Make process DPI aware and obtain main monitor scale
 	ImGui_ImplWin32_EnableDpiAwareness();
@@ -118,6 +122,8 @@ void Launcher::Initialise(HWND Window, ID3D11Device* InDevice, ID3D11DeviceConte
 
 void Launcher::Shutdown()
 {
+	Config::Save(ForerunnerPath / "config.json");
+
 	ImGui_ImplDX11_Shutdown();
 	ImGui_ImplWin32_Shutdown();
 	ImGui::DestroyContext();
@@ -245,7 +251,7 @@ void Launcher::DrawMainWindow()
 		ImGui::TextColored(ImVec4(0.8f, 0.0f, 0.0f, 1.0f), "Payload DLL not found, check Forerunner was installed correctly");
 	}
 
-	if (bAutoLaunch && !bIsLaunching && !bHasAutoLaunched)
+	if (Config::Launcher::AutoLaunch && !bIsLaunching && !bHasAutoLaunched)
 	{
 		StartLaunch(3.0f);
 		bHasAutoLaunched = true;
@@ -274,7 +280,7 @@ void Launcher::DrawMainWindow()
 	}
 
 	const bool bCanInject = bIsHaloRunning && !PayloadPath.empty() && InjectedHaloProcessId != LastHaloProcessId;
-	const bool bShouldAutoInject = bAutoInject && bCanInject; // This will be a frame behind from any changes to the Auto Inject checkbox, but that is fine
+	const bool bShouldAutoInject = Config::Launcher::AutoInject && bCanInject; // This will be a frame behind from any changes to the Auto Inject checkbox, but that is fine
 
 	ImGui::BeginDisabled(!bCanInject);
 	if (ImGui::Button("Inject") || bShouldAutoInject)
@@ -283,7 +289,7 @@ void Launcher::DrawMainWindow()
 		{
 			InjectedHaloProcessId = LastHaloProcessId;
 			
-			if (bCloseOnInject)
+			if (Config::Launcher::CloseOnInject)
 			{
 				PostQuitMessage(0);
 			}
@@ -291,9 +297,9 @@ void Launcher::DrawMainWindow()
 	}
 	ImGui::EndDisabled();
 
-	ImGui::Checkbox("Auto launch", &bAutoLaunch);
-	ImGui::Checkbox("Auto inject", &bAutoInject);
-	ImGui::Checkbox("Close on inject", &bCloseOnInject);
+	ImGui::Checkbox("Auto launch", &Config::Launcher::AutoLaunch);
+	ImGui::Checkbox("Auto inject", &Config::Launcher::AutoInject);
+	ImGui::Checkbox("Close on inject", &Config::Launcher::CloseOnInject);
 
 	ImGui::EndChild();
 	ImGui::PopStyleVar();

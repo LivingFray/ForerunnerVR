@@ -54,10 +54,6 @@ private:
 
 	std::string PayloadPath;
 
-	bool bAutoLaunch = true;
-	bool bAutoInject = true;
-	bool bCloseOnInject = true;
-
 	bool bHasAutoLaunched = false;
 	bool bIsLaunching = false;
 	float LaunchDelay = 0.0f;

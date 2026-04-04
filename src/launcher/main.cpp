@@ -58,6 +58,8 @@ static bool InitialiseDirectX(HWND Window)
 	return true;
 }
 
+static bool bShouldQuit = false;
+
 LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 {
 	LRESULT OutResult = 0;
@@ -77,6 +79,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 		}
 		case WM_DESTROY:
 		{
+			bShouldQuit = true;
 			PostQuitMessage(0);
 			break;
 		}
@@ -90,7 +93,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInsance, LPSTR lpCmdLine,
 {
 	wchar_t DLLPath[MAX_PATH];
 	GetModuleFileNameW(NULL, DLLPath, MAX_PATH);
-	ForerunnerPath = std::filesystem::path{DLLPath};
+	ForerunnerPath = std::filesystem::path{DLLPath}.parent_path();
 	
 	// Create launcher window
 	WNDCLASSEXW WinClass = {};
@@ -143,7 +146,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInsance, LPSTR lpCmdLine,
 	LauncherInst.Initialise(Window, D3D11Device, D3D11DeviceContext, D3D11SwapChain);
 
 	// Main update loop
-	bool bShouldQuit = false;
 	while (!bShouldQuit)
 	{
 		MSG Message{};
