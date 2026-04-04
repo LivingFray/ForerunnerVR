@@ -8,6 +8,7 @@
 #include <backends/imgui_impl_win32.h>
 #include <backends/imgui_impl_dx11.h>
 #include "imgui_extensions.h"
+#include "config_editor.h"
 // System
 #include <d3d11.h>
 #include <chrono>
@@ -297,10 +298,6 @@ void Launcher::DrawMainWindow()
 	}
 	ImGui::EndDisabled();
 
-	ImGui::Checkbox("Auto launch", &Config::Launcher::AutoLaunch);
-	ImGui::Checkbox("Auto inject", &Config::Launcher::AutoInject);
-	ImGui::Checkbox("Close on inject", &Config::Launcher::CloseOnInject);
-
 	ImGui::EndChild();
 	ImGui::PopStyleVar();
 }
@@ -327,6 +324,8 @@ void Launcher::DrawSettingsWindow()
 	ImGui::PushFont(nullptr, style.FontSizeBase * 4.0f);
 	ImGui::SeparatorText("Settings");
 	ImGui::PopFont();
+
+	DrawConfig();
 }
 
 void Launcher::RefreshHaloProcess()
