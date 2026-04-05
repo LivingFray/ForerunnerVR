@@ -17,7 +17,29 @@ public:
 	// Get the HMD transform in local space, accounting for recentres
 	Matrix4 GetCameraTransform();
 
+	// Get the game's camera location, before being modified for VR
+	Vector3 GetGameCameraLocation() const
+	{
+		return TrueCameraLocation;
+	}
+
+	// Get the game's camera forward vector, before being modified for VR
+	Vector3 GetGameCameraForward() const
+	{
+		return TrueCameraForward;
+	}
+
+	// Get the game's camera up vector, before being modified for VR
+	Vector3 GetGameCameraUp() const
+	{
+		return TrueCameraUp;
+	}
+
 protected:
+
+	Vector3 TrueCameraLocation;
+	Vector3 TrueCameraForward;
+	Vector3 TrueCameraUp;
 
 	Vector3 OffsetLocation;
 	float OffsetYaw = 0.0f;

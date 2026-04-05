@@ -22,6 +22,35 @@ static_assert(sizeof(players_globals) == 0x15c);
 
 GLOBAL(players_globals*, g_players_globals, "halo2.dll", 0xe80a20, "41 b8 40 04 00 00 48 8d 0d ?? ?? ?? ?? 48 8b d8 e8 ?? ?? ?? ?? 33 c9 66 89 4b 08", +30);
 
+// Get the id for a local user's player datum
+datum players_get_player_id(int16_t user_index);
+// Get the object id for a local user's character
+datum players_get_object_id(int16_t user_index);
+// Get the player object for a local user
+struct object_datum* player_get_object_datum(int16_t user_index);
+
+struct player_datum
+{
+	uint8_t unk0[6];
+	uint16_t flags;
+	uint8_t unk1[28];
+	int field35_0x24;
+	int16_t user_index;
+	int16_t field37_0x2a;
+	datum object;
+	uint8_t unk2[80];
+	int16_t field119_0x80;
+	uint8_t unk3[53];
+	char team;
+	uint8_t unk4[358];
+	int32_t field534_0x220;
+};
+static_assert(sizeof(player_datum) == 0x224);
+
+GLOBAL(data_array*, g_players, "halo2.dll", 0xe80a28, "?? 33 c9 ?? 89 44 ?? 20 ?? b8 24 02 00 00 ?? 8d 51 10 e8 ?? ?? ?? ?? 33 d2 ?? 89 05 ?? ?? ?? ?? ?? b8 5c 01 00 00", +28);
+
+player_datum* players_get_datum(datum index);
+
 #define BIT(x) (1u << x)
 
 //TODO: Find where this gets set in code and find the actual purposes

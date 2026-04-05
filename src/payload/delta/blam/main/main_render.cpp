@@ -1,7 +1,6 @@
 #include "main_render.h"
 #include "payload/delta/deltamodule.h"
 #include "payload/delta/cameracomponent.h"
-#include "common/vr/IVR.h"
 
 void compute_window_bounds::Patch(render_window* render_window, int param2, int view_index, int view_count, int param5, int player_index, camera_result* result)
 {

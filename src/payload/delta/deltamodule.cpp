@@ -7,9 +7,11 @@
 // Blam decomp code
 #include "payload/delta/blam/game/game.h"
 #include "payload/delta/blam/game/players.h"
+#include "payload/delta/blam/interface/first_person_weapons.h"
 #include "payload/delta/blam/interface/interface.h"
 #include "payload/delta/blam/main/main_render.h"
 #include "payload/delta/blam/main/main_time.h"
+#include "payload/delta/blam/objects/objects.h"
 #include "payload/delta/blam/rasterizer/rasterizer_main.h"
 #include "payload/delta/blam/rasterizer/rasterizer_globals.h"
 #include "payload/delta/blam/render/render.h"
@@ -119,7 +121,8 @@ using AllPatches = Patch::PatchList<
 	interface_draw_screen,
 	interface_draw_splitscreen_borders,
 	players_update_before_game,
-	game_update
+	game_update,
+	first_person_update_bones
 >;
 
 bool DeltaModule::CreatePatches()
@@ -137,6 +140,9 @@ bool DeltaModule::FindGlobals()
 	bool bSuccess = true;
 
 	bSuccess |= g_players_globals.Find();
+	bSuccess |= g_players.Find();
+	bSuccess |= g_objects.Find();
+	bSuccess |= g_objects_pool.Find();
 	bSuccess |= g_device.Find();
 	bSuccess |= g_device_context.Find();
 	bSuccess |= g_output_target.Find();

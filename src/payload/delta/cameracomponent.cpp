@@ -46,6 +46,13 @@ void CameraComponent::UpdateRenderCamera(struct render_window* render_window, in
 
 	Vector3 CameraPos = SameCast<Vector3>(render_window->rasterizer_camera.position);
 
+	if (view_index == 0)
+	{
+		TrueCameraLocation = SameCast<Vector3>(render_window->rasterizer_camera.position);
+		TrueCameraForward = SameCast<Vector3>(render_window->rasterizer_camera.forward);
+		TrueCameraUp = SameCast<Vector3>(render_window->rasterizer_camera.up);
+	}
+
 	// TODO: HMD Transform
 	// Needs to handle roomscale movement + apply remainder to camera
 	// Also also needs to account for default eye height vs ground

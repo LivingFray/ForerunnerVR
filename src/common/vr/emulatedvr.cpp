@@ -186,9 +186,9 @@ Matrix4 EmulatedVR::GetEyeTransform(EVR_Eye Eye) const
 	switch (Eye)
 	{
 		case EVR_Eye::Left:
-			return Matrix4().translate(0.0f, -0.5f, 0.0f);
+			return Matrix4().translate(0.0f, -0.05f, 0.0f);
 		case EVR_Eye::Right:
-			return Matrix4().translate(0.0f, 0.5f, 0.0f);
+			return Matrix4().translate(0.0f, 0.05f, 0.0f);
 		default:
 			FORERUNNER_WARN(EmuVR, "Unexpected value for Eye passed to GetEyeTransform: {}", static_cast<int>(Eye));
 			return Matrix4();
