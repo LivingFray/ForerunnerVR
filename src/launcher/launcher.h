@@ -38,6 +38,8 @@ private:
 	void UpdateLaunchTime(float DeltaTime);
 	void LaunchHalo();
 
+	struct ImFont* HaloFont = nullptr;
+
 	ELauncherWindow ActiveWindow = ELauncherWindow::Main;
 
 	struct ID3D11Device* Device;

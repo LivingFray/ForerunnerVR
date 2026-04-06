@@ -15,6 +15,11 @@
 #include <filesystem>
 #include <shellapi.h>
 
+// Fonts
+#include "fonts/halo_font.cpp"
+
+static ImVec4 TitleColour(1.0f, 0.90f, 0.0392f, 1.0f);
+
 void Launcher::Initialise(HWND Window, ID3D11Device* InDevice, ID3D11DeviceContext* InContext, IDXGISwapChain* InSwapChain)
 {
 	Device = InDevice;
@@ -33,6 +38,9 @@ void Launcher::Initialise(HWND Window, ID3D11Device* InDevice, ID3D11DeviceConte
 	ImGuiIO& io = ImGui::GetIO(); (void)io;
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+
+	io.Fonts->AddFontDefaultVector();
+	HaloFont = io.Fonts->AddFontFromMemoryCompressedTTF(halo_font_compressed_data, halo_font_compressed_size);
 
 	// Setup Dear ImGui style
 	ImGui::StyleColorsDark();
@@ -229,8 +237,10 @@ void Launcher::DrawSidebar()
 void Launcher::DrawMainWindow()
 {
 	ImGuiStyle& style = ImGui::GetStyle();
-	ImGui::PushFont(nullptr, style.FontSizeBase * 4.0f);
+	ImGui::PushFont(HaloFont, style.FontSizeBase * 4.0f);
+	ImGui::PushStyleColor(ImGuiCol_Text, TitleColour);
 	ImGui::SeparatorText("Forerunner");
+	ImGui::PopStyleColor();
 	ImGui::PopFont();
 
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(8.0f, 8.0f));
@@ -305,8 +315,10 @@ void Launcher::DrawMainWindow()
 void Launcher::DrawHaloCEWindow()
 {
 	ImGuiStyle& style = ImGui::GetStyle();
-	ImGui::PushFont(nullptr, style.FontSizeBase * 4.0f);
+	ImGui::PushFont(HaloFont, style.FontSizeBase * 4.0f);
+	ImGui::PushStyleColor(ImGuiCol_Text, TitleColour);
 	ImGui::SeparatorText("HaloCEVR");
+	ImGui::PopStyleColor();
 	ImGui::PopFont();
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(8.0f, 8.0f));
 	ImGui::BeginChild("HaloCEVR_Sub", ImVec2(0, 0), ImGuiChildFlags_AlwaysUseWindowPadding);
@@ -321,8 +333,10 @@ void Launcher::DrawHaloCEWindow()
 void Launcher::DrawSettingsWindow()
 {
 	ImGuiStyle& style = ImGui::GetStyle();
-	ImGui::PushFont(nullptr, style.FontSizeBase * 4.0f);
+	ImGui::PushFont(HaloFont, style.FontSizeBase * 4.0f);
+	ImGui::PushStyleColor(ImGuiCol_Text, TitleColour);
 	ImGui::SeparatorText("Settings");
+	ImGui::PopStyleColor();
 	ImGui::PopFont();
 
 	DrawConfig();

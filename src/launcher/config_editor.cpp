@@ -17,6 +17,15 @@ static std::string ToString(const bool& V)
 	return V ? "true" : "false";
 }
 
+template<>
+static std::string ToString(const EMovementInputType& V)
+{
+	nlohmann::json Temp;
+	to_json(Temp, V);
+
+	return Temp;
+}
+
 template<typename T>
 static void AddButton(T& Value, const char* Name)
 {
@@ -25,19 +34,55 @@ static void AddButton(T& Value, const char* Name)
 
 static void AddDescription(const std::string& Desc, const std::string& DefaultValue)
 {
-	ImGui::SameLine();
-	ImGui::TextColored(ImVec4(0.8f, 0.8f, 0.8f, 1.0f), "Default Value: %s", DefaultValue.c_str());
-	ImGui::Indent();
-	ImGui::Indent();
 	ImGui::TextColored(ImVec4(0.8f, 0.8f, 0.8f, 1.0f), Desc.c_str());
-	ImGui::Unindent();
-	ImGui::Unindent();
+	ImGui::TextColored(ImVec4(0.8f, 0.8f, 0.8f, 1.0f), "Default Value: %s", DefaultValue.c_str());
 }
 
 template<>
 static void AddButton<bool>(bool& Value, const char* Name)
 {
-	ImGui::Checkbox(Name, &Value);
+	ImGui::SetWindowFontScale(1.25f);
+	ImGui::AlignTextToFramePadding();
+	ImGui::Text(Name);
+	ImGui::SetWindowFontScale(1.0f);
+	ImGui::SameLine(ImGui::GetWindowWidth() - ImGui::GetFrameHeight() - 10.0f);
+	ImGui::PushID(Name);
+	ImGui::Checkbox("##checkbox", &Value);
+	ImGui::PopID();
+}
+
+template <typename T>
+concept IsSerialisedEnum = requires { T::E_MAX; };
+
+template<IsSerialisedEnum T>
+static void AddButton(T& Value, const char* Name)
+{
+	ImGui::SetWindowFontScale(1.25f);
+	ImGui::AlignTextToFramePadding();
+	ImGui::Text(Name);
+	ImGui::SetWindowFontScale(1.0f);
+	ImGui::SameLine(ImGui::GetWindowWidth() / 2);
+	ImGui::SetNextItemWidth(ImGui::GetWindowWidth() / 2 - 10.0f);
+	ImGui::PushID(Name);
+	if (ImGui::BeginCombo("##enum", ToString(Value).c_str()))
+	{
+		for (int i = 0; i < static_cast<int>(T::E_MAX); i++)
+		{
+			T Option = static_cast<T>(i);
+			bool bIsThisItemSelected = (Value == Option);
+			if (ImGui::Selectable(ToString(Option).c_str(), bIsThisItemSelected))
+			{
+				Value = Option;
+			}
+
+			if (bIsThisItemSelected)
+			{
+				ImGui::SetItemDefaultFocus();
+			}
+		}
+		ImGui::EndCombo();
+	}
+	ImGui::PopID();
 }
 
 void DrawConfig()
