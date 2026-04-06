@@ -103,6 +103,8 @@ void DeltaModule::Present()
 		VR->SetDeviceContext(g_device_context());
 		VR->Init();
 
+		Input.RegisterInputs();
+
 		Render.Init();
 		bHasInit = true;
 

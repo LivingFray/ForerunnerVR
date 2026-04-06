@@ -94,7 +94,12 @@ void CameraComponent::RecentreCamera()
 	OffsetMatrix = Matrix4().translate(-OffsetLocation).rotateZ(-OffsetYaw);
 }
 
-Matrix4 CameraComponent::GetCameraTransform()
+Matrix4 CameraComponent::GetCameraTransform() const
 {
 	return OffsetMatrix * DeltaModule::Get().VR->GetHMDTransform();
+}
+
+Matrix4 CameraComponent::GetControllerTransform(EVR_Controller Controller) const
+{
+	return OffsetMatrix * DeltaModule::Get().VR->GetControllerTransform(Controller);
 }

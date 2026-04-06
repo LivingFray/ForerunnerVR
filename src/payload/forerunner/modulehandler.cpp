@@ -1,12 +1,12 @@
 #include "modulehandler.h"
 
 #include <iostream>
+#include <filesystem>
 #include "payload/forerunner/patch.h"
 #include "payload/delta/deltamodule.h"
+#include "common/config/config.h"
 #include "common/utils/log.h"
 #include "common/utils/utils.h"
-#include "common/utils/utils.h"
-#include <filesystem>
 
 void ModuleHandler::Initialise(wchar_t* InDLLPath)
 {
@@ -19,6 +19,8 @@ void ModuleHandler::Initialise(wchar_t* InDLLPath)
 	}
 
 	ForerunnerPath = std::filesystem::path{DLLPath}.parent_path();
+
+	Config::Load(ForerunnerPath / "config.json");
 
 	// Do any shared initialisation logic first
 	if (!Patch::Initialise())

@@ -22,6 +22,12 @@ public:
 	float GetVerticalFieldOfView(EVR_Eye Eye) const override;
 	Matrix4 GetHMDTransform() const override;
 	Matrix4 GetEyeTransform(EVR_Eye Eye) const override;
+	Matrix4 GetControllerTransform(EVR_Controller Controller) const override;
+	InputBindingID RegisterBoolInput(const std::string& Set, const std::string& Action) override;
+	InputBindingID RegisterVector2Input(const std::string& Set, const std::string& Action) override;
+	bool GetBoolInput(InputBindingID ID) const override;
+	bool GetBoolInput(InputBindingID ID, bool& bHasChanged) const override;
+	Vector2 GetVector2Input(InputBindingID ID) const override;
 
 protected:
 

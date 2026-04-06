@@ -57,8 +57,6 @@ bool OpenVR::EarlyInit()
 		return false;
 	}
 
-	// TODO: Create overlay here
-
 	std::filesystem::path Manifest = ForerunnerPath / "VR" / "OpenVR" / "forerunner.vrmanifest";
 	vr::EVRApplicationError AppErr = vr::VRApplications()->AddApplicationManifest(Manifest.string().c_str());
 
@@ -74,7 +72,13 @@ bool OpenVR::EarlyInit()
 		FORERUNNER_WARN(OpenVR, "Could not set id: {}", static_cast<int32_t>(AppErr));
 	}
 
-	// TODO: Load actions here (could also be done later I suppose)
+	std::filesystem::path Actions = std::filesystem::current_path() / "VR" / "OpenVR" / "actions.json";
+	vr::EVRInputError InputErr = VRInput->SetActionManifestPath(Actions.string().c_str());
+
+	if (InputErr != vr::VRInputError_None)
+	{
+		FORERUNNER_WARN(OpenVR, "Could not set action manifest path: {}", static_cast<int32_t>(InputErr));
+	}
 
 	// TODO: Init poses/active action sets here
 
@@ -216,4 +220,104 @@ Matrix4 OpenVR::GetEyeTransform(EVR_Eye Eye) const
 	}
 
 	return ConvertSteamVRMatrixToMatrix4(VRSystem->GetEyeToHeadTransform(static_cast<vr::EVREye>(Eye))).invertAffine();
+}
+
+Matrix4 OpenVR::GetControllerTransform(EVR_Controller Controller) const
+{
+	if (!VRSystem)
+	{
+		FORERUNNER_WARN(OpenVR, "Attempted to get {} controller transform before initialising", Controller);
+		return Matrix4();
+	}
+	
+	vr::TrackedDeviceIndex_t controllerIndex = VRSystem->GetTrackedDeviceIndexForControllerRole(Controller == EVR_Controller::Left ? vr::TrackedControllerRole_LeftHand : vr::TrackedControllerRole_RightHand);
+
+	Matrix4 outMatrix;
+
+	return ConvertSteamVRMatrixToMatrix4(RenderPoses[controllerIndex].mDeviceToAbsoluteTracking);
+}
+
+static std::string SetAndActionToString(const std::string& Set, const std::string& Action)
+{
+	return ("/actions/" + Set + "/in/" + Action);
+}
+
+InputBindingID OpenVR::RegisterBoolInput(const std::string& Set, const std::string& Action)
+{
+	InputBindingID ID = 0;
+	std::string InputString = SetAndActionToString(Set, Action);
+
+	vr::EVRInputError InputErr = VRInput->GetActionHandle(InputString.c_str(), &ID);
+	if (InputErr != vr::VRInputError_None)
+	{
+		FORERUNNER_WARN(OpenVR, "Could not register bool input {}: {}", InputString, static_cast<int32_t>(InputErr));
+	}
+	else
+	{
+		FORERUNNER_LOG(OpenVR, "Registered bool input {} with id {}", InputString, ID);
+	}
+	return ID;
+}
+
+InputBindingID OpenVR::RegisterVector2Input(const std::string& Set, const std::string& Action)
+{
+	InputBindingID ID = 0;
+	std::string InputString = SetAndActionToString(Set, Action);
+
+	vr::EVRInputError InputErr = VRInput->GetActionHandle(InputString.c_str(), &ID);
+	if (InputErr != vr::VRInputError_None)
+	{
+		FORERUNNER_WARN(OpenVR, "Could not register Vector2 input {}: {}", InputString, static_cast<int32_t>(InputErr));
+	}
+	else
+	{
+		FORERUNNER_LOG(OpenVR, "Registered Vector2 input {} with id {}", InputString, ID);
+	}
+	return ID;
+}
+
+bool OpenVR::GetBoolInput(InputBindingID ID) const
+{
+	static bool dummy = false;
+	return GetBoolInput(ID, dummy);
+}
+
+bool OpenVR::GetBoolInput(InputBindingID ID, bool& bHasChanged) const
+{
+	if (!VRSystem)
+	{
+		FORERUNNER_WARN(OpenVR, "Attempted to get input binding before initialising");
+		return false;
+	}
+
+	static vr::InputDigitalActionData_t Digital;
+	vr::EVRInputError InputErr = VRInput->GetDigitalActionData(ID, &Digital, sizeof(vr::InputDigitalActionData_t), vr::k_ulInvalidInputValueHandle);
+	if (InputErr != vr::VRInputError_None)
+	{
+		FORERUNNER_WARN(OpenVR, "Could not get digital action {}: {}", ID, static_cast<int32_t>(InputErr));
+		return false;
+	}
+
+	bHasChanged = Digital.bChanged;
+
+	return Digital.bState;
+}
+
+Vector2 OpenVR::GetVector2Input(InputBindingID ID) const
+{
+	if (!VRSystem)
+	{
+		FORERUNNER_WARN(OpenVR, "Attempted to get input binding before initialising");
+		return Vector2();
+	}
+
+	static vr::InputAnalogActionData_t Analog;
+	vr::EVRInputError InputErr = VRInput->GetAnalogActionData(ID, &Analog, sizeof(vr::InputAnalogActionData_t), vr::k_ulInvalidInputValueHandle);
+	if (InputErr != vr::VRInputError_None)
+	{
+		FORERUNNER_WARN(OpenVR, "Could not get analog action {}: {}", ID, static_cast<int32_t>(InputErr));
+		return Vector2();
+	}
+
+	return Vector2(Analog.x, Analog.y);
 }

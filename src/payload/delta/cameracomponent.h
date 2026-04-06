@@ -1,6 +1,7 @@
 #pragma once
 #include "common/utils/matrices.h"
 #include "common/utils/vectors.h"
+#include "common/vr/IVR.h"
 
 // Handles positioning the game camera based on the HMD's transform
 class CameraComponent
@@ -15,7 +16,10 @@ public:
 	void RecentreCamera();
 
 	// Get the HMD transform in local space, accounting for recentres
-	Matrix4 GetCameraTransform();
+	Matrix4 GetCameraTransform() const;
+
+	// Get a controller transform in local space, accounting for recentres
+	Matrix4 GetControllerTransform(EVR_Controller Controller) const;
 
 	// Get the game's camera location, before being modified for VR
 	Vector3 GetGameCameraLocation() const

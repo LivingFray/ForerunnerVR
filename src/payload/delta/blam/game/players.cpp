@@ -13,6 +13,7 @@ int players_get_window_count::Patch()
 void players_update_before_game::Patch(simulation_update* update)
 {
 	DeltaModule::Get().Camera.UpdatePlayerCamera(update);
+	DeltaModule::Get().Input.UpdateInputs(update);
 
 	Original(update);
 }

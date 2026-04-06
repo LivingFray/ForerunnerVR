@@ -11,6 +11,7 @@
 #include "rendercomponent.h"
 #include "uicomponent.h"
 #include "cameracomponent.h"
+#include "inputcomponent.h"
 
 FORERUNNER_CREATE_LOG_CATEGORY(Delta);
 
@@ -30,6 +31,7 @@ public:
 	RenderComponent Render;
 	UIComponent UI;
 	CameraComponent Camera;
+	InputComponent Input;
 
 protected:
 	static inline const char* ModuleName = "halo2.dll";

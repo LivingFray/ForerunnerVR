@@ -86,6 +86,8 @@ void EmulatedVR::Update(float DeltaTime)
 	CameraYaw = fmodf(CameraYaw, std::numbers::pi_v<float> * 2.0f);
 	CameraPitch = std::min(CameraPitch, std::numbers::pi_v<float> * 0.5f);
 	CameraPitch = std::max(CameraPitch, -std::numbers::pi_v<float> * 0.5f);
+
+	UpdateKeyInputs();
 }
 
 void EmulatedVR::SubmitEye(EVR_Eye Eye, ID3D11Texture2D* Texture, const VR_Bounds& ViewBounds)
@@ -186,14 +188,35 @@ Matrix4 EmulatedVR::GetEyeTransform(EVR_Eye Eye) const
 	switch (Eye)
 	{
 		case EVR_Eye::Left:
-			return Matrix4().translate(0.0f, -0.05f, 0.0f);
-		case EVR_Eye::Right:
 			return Matrix4().translate(0.0f, 0.05f, 0.0f);
+		case EVR_Eye::Right:
+			return Matrix4().translate(0.0f, -0.05f, 0.0f);
 		default:
 			FORERUNNER_WARN(EmuVR, "Unexpected value for Eye passed to GetEyeTransform: {}", static_cast<int>(Eye));
 			return Matrix4();
 	}
 }
+
+Matrix4 EmulatedVR::GetControllerTransform(EVR_Controller Controller) const
+{
+	Matrix4 ControllerOffset;
+
+	switch (Controller)
+	{
+		case EVR_Controller::Left:
+			ControllerOffset.translate(0.05f, 0.1f, -0.1f);
+			break;
+		case EVR_Controller::Right:
+			ControllerOffset.translate(0.05f, -0.1f, -0.1f);
+			break;
+		default:
+			FORERUNNER_WARN(EmuVR, "Unexpected value for Controller passed to GetControllerTransform: {}", static_cast<int>(Controller));
+			break;
+	}
+
+	return GetHMDTransform() * ControllerOffset;
+}
+
 
 static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 {
@@ -300,4 +323,187 @@ bool EmulatedVR::CreateDirectXObjects()
 	FORERUNNER_LOG(EmuVR, "Grabbed backbuffer");
 
 	return true;
+}
+
+// TODO: Need a (slightly) better way to do this, so that the inputs aren't game dependent. Maybe create a simple json file with bindings and parse that
+
+struct Binding
+{
+	std::string bindingName;
+	int virtualKey = 0;
+	bool bHasChanged = false;
+	bool bPressed = false;
+};
+
+// Copied from HaloCEVR. Will need replacing with new bindings
+Binding bindings[13] = {
+	{"Jump", VK_SPACE},
+	{"SwitchGrenades", 'G'},
+	{"Interact", 'E'},
+	{"SwitchWeapons", VK_TAB},
+	{"Melee", 'Q'},
+	{"Flashlight", 'F'},
+	{"Grenade", VK_RBUTTON},
+	{"Fire", VK_LBUTTON},
+	{"MenuBack", 'P'}, // Intentionally weird binding because we don't override this in the same way and it would conflict
+	{"Crouch", VK_LCONTROL},
+	{"Zoom", 'Z'},
+	{"Reload", 'R'},
+	{"EMU_MoveHandSwap", 'H'}
+};
+
+struct AxisBinding
+{
+	int virtualKey = 0;
+	int scale = 0;
+	int axisId = 0;
+};
+
+struct Axis2D
+{
+	std::string axisName;
+	int indexX = 0;
+	int indexY = 0;
+};
+
+float axes1D[6] = {
+	0.0f,
+	0.0f,
+	0.0f,
+	0.0f,
+	0.0f
+};
+
+Axis2D axes2D[3] =
+{
+	{"Move", 0, 1},
+	{"EMU_MoveHandFlat", 2, 3},
+	{"EMU_MoveHandVert", 4, 5}
+};
+
+AxisBinding axisBindings[10] =
+{
+	{'W', 1, 1},
+	{'S', -1, 1},
+	{'A', -1, 0},
+	{'D', 1, 0},
+	{'I', 1, 3},
+	{'K', -1, 3},
+	{'J', -1, 2},
+	{'L', 1, 2},
+	{'U', -1, 4},
+	{'O', 1, 4},
+};
+
+template<typename T, std::size_t N>
+constexpr std::size_t ArraySize(T(&)[N])
+{
+	return N;
+}
+
+InputBindingID EmulatedVR::RegisterBoolInput(const std::string& Set, const std::string& Action)
+{
+	for (size_t i = 0; i < ArraySize(bindings); i++)
+	{
+		if (bindings[i].bindingName == Action)
+		{
+			FORERUNNER_LOG(EmuVR, "Registered Bool input {} with id {}", Action, i);
+			return i;
+		}
+	}
+	FORERUNNER_LOG(EmuVR, "Registered Bool input {} with id {}", Action, 999);
+	return 999;
+}
+
+InputBindingID EmulatedVR::RegisterVector2Input(const std::string& Set, const std::string& Action)
+{
+	for (size_t i = 0; i < ArraySize(axes2D); i++)
+	{
+		if (axes2D[i].axisName == Action)
+		{
+			FORERUNNER_LOG(EmuVR, "Registered Vector2 input {} with id {}", Action, i);
+			return i;
+		}
+	}
+	FORERUNNER_LOG(EmuVR, "Registered Vector2 input {} with id {}", Action, 999);
+	return 999;
+}
+
+bool EmulatedVR::GetBoolInput(InputBindingID ID) const
+{
+	static bool bDummy = false;
+	return GetBoolInput(ID, bDummy);
+}
+
+bool EmulatedVR::GetBoolInput(InputBindingID ID, bool& bHasChanged) const
+{
+	if (ID < ArraySize(bindings))
+	{
+		bHasChanged = bindings[ID].bHasChanged;
+		return bindings[ID].bPressed;
+	}
+	return false;
+}
+
+Vector2 EmulatedVR::GetVector2Input(InputBindingID ID) const
+{
+	if (ID < ArraySize(axes2D))
+	{
+		return Vector2(axes1D[axes2D[ID].indexX], axes1D[axes2D[ID].indexY]);
+	}
+	return Vector2();
+}
+
+void EmulatedVR::UpdateKeyInputs()
+{
+	for (size_t i = 0; i < ArraySize(bindings); i++)
+	{
+		bool bPressed = GetAsyncKeyState(bindings[i].virtualKey) & 0x8000;
+		bindings[i].bHasChanged = bPressed != bindings[i].bPressed;
+		bindings[i].bPressed = bPressed;
+	}
+
+	for (size_t i = 0; i < ArraySize(axes1D); i++)
+	{
+		axes1D[i] = 0.0f;
+	}
+
+	for (size_t i = 0; i < ArraySize(axisBindings); i++)
+	{
+		bool bPressed = GetAsyncKeyState(axisBindings[i].virtualKey) & 0x8000;
+		if (bPressed)
+		{
+			axes1D[axisBindings[i].axisId] += axisBindings[i].scale * 1.0f;
+		}
+	}
+
+	/*
+	// Respond to fake inputs used to control gun hand
+	Vector2 handMoveFlat = GetVector2Input(inputMoveHandFlat) * Game::instance.lastDeltaTime;
+	Vector2 handMoveVert = GetVector2Input(inputMoveHandVert) * Game::instance.lastDeltaTime;
+
+	// Swap between moving/rotating
+	bool bhandModeChanged;
+	bool bSwapHandMove = GetBoolInput(inputMoveHandSwap, bhandModeChanged);
+	if (bhandModeChanged && bSwapHandMove)
+	{
+		bMoveHand ^= true;
+	}
+
+	constexpr float moveSpeed = 0.5f;
+	constexpr float rotSpeed = 180.0f;
+
+	if (bMoveHand)
+	{
+		mainHandOffset.x += handMoveFlat.x * moveSpeed;
+		mainHandOffset.y += handMoveFlat.y * moveSpeed;
+		mainHandOffset.z += handMoveVert.x * moveSpeed;
+	}
+	else
+	{
+		mainHandRot.x += handMoveFlat.x * rotSpeed;
+		mainHandRot.y += handMoveFlat.y * rotSpeed;
+		mainHandRot.z += handMoveVert.x * rotSpeed;
+	}
+	*/
 }

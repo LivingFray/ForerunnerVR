@@ -15,5 +15,6 @@ int first_person_update_bones::Patch(int user_index, datum object_id, real_vecto
 		return Original(user_index, object_id, &CameraLocation, facing, up, maximum_model_count, models, param_8);
 	}
 
+	// NB: This doesn't account for interpolation, turning leads to stuttery movement
 	return Original(user_index, object_id, &CameraLocation, &player->object.forward, &player->object.up, maximum_model_count, models, param_8);
 }

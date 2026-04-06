@@ -296,6 +296,8 @@ void Launcher::DrawMainWindow()
 	ImGui::BeginDisabled(!bCanInject);
 	if (ImGui::Button("Inject") || bShouldAutoInject)
 	{
+		// Ensure config is up to date before it gets loaded by the payload
+		Config::Save(ForerunnerPath / "config.json");
 		if (Inject::InjectDLL(PayloadPath.c_str(), LastHaloProcessId))
 		{
 			InjectedHaloProcessId = LastHaloProcessId;

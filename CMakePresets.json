@@ -18,8 +18,8 @@
             }
         },
         {
-            "name": "x64-debug",
-            "displayName": "Debug",
+            "name": "x64-debug-emu",
+            "displayName": "Debug Emu",
             "inherits": "windows-base",
             "architecture": {
                 "value": "x64",
@@ -31,11 +31,25 @@
             }
         },
         {
+            "name": "x64-debug",
+            "displayName": "Debug",
+            "inherits": "windows-base",
+            "architecture": {
+                "value": "x64",
+                "strategy": "external"
+            },
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "USE_EMULATOR": false
+            }
+        },
+        {
             "name": "x64-release",
             "displayName": "Release",
             "inherits": "x64-debug",
             "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "Release"
+                "CMAKE_BUILD_TYPE": "Release",
+                "USE_EMULATOR": false
             }
         }
     ]
