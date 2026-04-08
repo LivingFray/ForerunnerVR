@@ -48,3 +48,10 @@ target_link_libraries(ForerunnerPayload PRIVATE
 )
 
 target_link_options(ForerunnerPayload PRIVATE "/DELAYLOAD:openvr_api.dll")
+
+# Ensure debug information is embedded in the DLL
+if(POLICY CMP0141)
+  set_target_properties(ForerunnerPayload PROPERTIES
+    MSVC_DEBUG_INFORMATION_FORMAT "$<$<CONFIG:Debug,RelWithDebInfo>:ProgramDatabase>"
+     )
+   endif()

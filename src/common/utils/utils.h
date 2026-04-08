@@ -71,6 +71,21 @@ inline Vector3 Vector3FromVector4(const Vector4& V)
 // Formatting
 #include <format>
 template <>
+struct std::formatter<Vector2> : std::formatter<std::string_view>
+{
+	constexpr auto parse(std::format_parse_context& ctx)
+	{
+		return ctx.begin();
+	}
+
+	auto format(Vector2 v, std::format_context& ctx) const
+	{
+		return std::format_to(ctx.out(), "({}, {})", v.x, v.y);
+	}
+};
+
+
+template <>
 struct std::formatter<Vector3> : std::formatter<std::string_view>
 {
 	constexpr auto parse(std::format_parse_context& ctx)

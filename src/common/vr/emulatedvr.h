@@ -35,6 +35,9 @@ public:
 	bool GetBoolInput(InputBindingID ID) const override;
 	bool GetBoolInput(InputBindingID ID, bool& bHasChanged) const override;
 	Vector2 GetVector2Input(InputBindingID ID) const override;
+	InputBindingID RegisterActionSet(const std::string& Set) override;
+	void ActivateActionSet(InputBindingID ID) override;
+	void DeactivateActionSet(InputBindingID ID) override;
 
 protected:
 	bool CreateVRWindow();

@@ -21,4 +21,7 @@ protected:
 	void ModifyInputVector(struct Vector2& Input, EVR_Controller Controller) const;
 
 	InputBindingID BindingMove;
+	InputBindingID BindingLook;
+
+	InputBindingID SetDefault;
 };

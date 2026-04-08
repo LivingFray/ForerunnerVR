@@ -5,14 +5,21 @@
 #include "payload/delta/blam/game/players.h"
 #include "payload/delta/blam/simulation/simulation.h"
 
+#include "common/utils/utils.h"
 #include "common/utils/vectors.h"
 #include "common/config/config.h"
+
+constexpr const char* DefaultActionSet = "delta_default";
 
 void InputComponent::RegisterInputs()
 {
 	IVR* VR = DeltaModule::Get().VR;
 
-	BindingMove = VR->RegisterVector2Input("default", "Move");
+	BindingMove = VR->RegisterVector2Input(DefaultActionSet, "Move");
+	BindingLook = VR->RegisterVector2Input(DefaultActionSet, "Look");
+
+	SetDefault = VR->RegisterActionSet(DefaultActionSet);
+	VR->ActivateActionSet(SetDefault);
 }
 
 void InputComponent::UpdateInputs(simulation_update* update)

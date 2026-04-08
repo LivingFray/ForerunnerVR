@@ -1,0 +1,61 @@
+{
+    "bindings": {
+        "/actions/delta_default": {
+            "haptics": [
+                {
+                    "output": "/actions/delta_default/out/LeftHaptics",
+                    "path": "/user/hand/left/output/haptic"
+                },
+                {
+                    "output": "/actions/delta_default/out/RightHaptics",
+                    "path": "/user/hand/right/output/haptic"
+                }
+            ],
+            "poses": [
+                {
+                    "output": "/actions/delta_default/in/LeftTip",
+                    "path": "/user/hand/left/pose/tip"
+                },
+                {
+                    "output": "/actions/delta_default/in/RightTip",
+                    "path": "/user/hand/right/pose/tip"
+                }
+            ],
+            "sources": [
+                {
+                    "inputs": {
+                        "position": {
+                            "output": "/actions/delta_default/in/Look"
+                        }
+                    },
+                    "mode": "joystick",
+                    "path": "/user/hand/right/input/joystick",
+                    "parameters": {}
+                },
+                {
+                    "inputs": {
+                        "position": {
+                            "output": "/actions/delta_default/in/Move"
+                        }
+                    },
+                    "mode": "joystick",
+                    "path": "/user/hand/left/input/joystick",
+                    "parameters": {}
+                }
+            ],
+            "skeleton": [
+                {
+                    "output": "/actions/delta_default/in/LeftHand",
+                    "path": "/user/hand/left/input/skeleton/left"
+                },
+                {
+                    "output": "/actions/delta_default/in/RightHand",
+                    "path": "/user/hand/right/input/skeleton/right"
+                }
+            ]
+        }
+    },
+    "controller_type": "oculus_touch",
+    "description": "Default bindings for oculus_touch",
+    "name": "oculus_touch"
+}

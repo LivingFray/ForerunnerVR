@@ -1,0 +1,54 @@
+{
+  "default_bindings": [
+   {
+		"controller_type": "oculus_touch",
+		"binding_url": "oculus_touch.json"
+   }
+  ], 
+  "actions": [
+	{
+		"name": "/actions/delta_default/in/Move",
+		"requirement": "mandatory",
+		"type": "vector2"
+	},
+	{
+		"name": "/actions/delta_default/in/Look",
+		"requirement": "mandatory",
+		"type": "vector2"
+	},
+	{
+		"name": "/actions/delta_default/in/LeftTip",
+		"requirement": "suggested",
+		"type": "pose"
+	},
+	{
+		"name": "/actions/delta_default/in/RightTip",
+		"requirement": "suggested",
+		"type": "pose"
+	},
+	{
+		"name": "/actions/delta_default/out/LeftHaptics",
+		"type": "vibration"
+	},
+	{
+		"name": "/actions/delta_default/out/RightHaptics",
+		"type": "vibration"
+	},
+	{
+		"name": "/actions/delta_default/in/LeftHand",
+		"type": "skeleton",
+		"skeleton": "/skeleton/hand/left"
+	},
+	{
+		"name": "/actions/delta_default/in/RightHand",
+		"type": "skeleton",
+		"skeleton": "/skeleton/hand/right"
+	}
+  ],
+  "action_sets": [
+	{
+		"name": "/actions/delta_default",
+		"usage": "leftright"
+	}
+  ]
+}

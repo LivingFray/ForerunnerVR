@@ -66,6 +66,12 @@ public:
 	virtual bool GetBoolInput(InputBindingID ID, bool& bHasChanged) const = 0;
 	// Get the current state of a 2d vector input registered with the given ID. Returns default value if the ID is invalid
 	virtual Vector2 GetVector2Input(InputBindingID ID) const = 0;
+	// Register an action set
+	virtual InputBindingID RegisterActionSet(const std::string& Set) = 0;
+	// Enable an action set previously registered with RegisterActionSet
+	virtual void ActivateActionSet(InputBindingID ID) = 0;
+	// Disable an action set previously registered with RegisterActionSet
+	virtual void DeactivateActionSet(InputBindingID ID) = 0;
 };
 
 

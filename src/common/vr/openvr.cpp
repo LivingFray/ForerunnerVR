@@ -65,14 +65,14 @@ bool OpenVR::EarlyInit()
 		FORERUNNER_WARN(OpenVR, "Could not add application manifest: {}", static_cast<int32_t>(AppErr));
 	}
 
-	AppErr = vr::VRApplications()->IdentifyApplication(GetCurrentProcessId(), "livingfray.forerunner");
+	AppErr = vr::VRApplications()->IdentifyApplication(0, "livingfray.forerunner");
 
 	if (AppErr != vr::VRApplicationError_None)
 	{
 		FORERUNNER_WARN(OpenVR, "Could not set id: {}", static_cast<int32_t>(AppErr));
 	}
 
-	std::filesystem::path Actions = std::filesystem::current_path() / "VR" / "OpenVR" / "actions.json";
+	std::filesystem::path Actions = ForerunnerPath / "VR" / "OpenVR" / "actions.json";
 	vr::EVRInputError InputErr = VRInput->SetActionManifestPath(Actions.string().c_str());
 
 	if (InputErr != vr::VRInputError_None)
@@ -147,6 +147,15 @@ void OpenVR::Update(float DeltaTime)
 	}
 
 	VRCompositor->WaitGetPoses(RenderPoses, vr::k_unMaxTrackedDeviceCount, GamePoses, vr::k_unMaxTrackedDeviceCount);
+
+	if (ActiveActionSets.size() > 0)
+	{
+		vr::EVRInputError InputErr = VRInput->UpdateActionState(ActiveActionSets.data(), sizeof(vr::VRActiveActionSet_t), static_cast<uint32_t>(ActiveActionSets.size()));
+		if (InputErr != vr::VRInputError_None)
+		{
+			FORERUNNER_WARN(OpenVR, "Could not update action state: {}", static_cast<int>(InputErr));
+		}
+	}
 }
 
 void OpenVR::SubmitEye(EVR_Eye Eye, ID3D11Texture2D* Texture, const VR_Bounds& ViewBounds)
@@ -169,7 +178,7 @@ void OpenVR::SubmitEye(EVR_Eye Eye, ID3D11Texture2D* Texture, const VR_Bounds& V
 
 	if (Error != vr::VRCompositorError_None)
 	{
-		FORERUNNER_WARN(OpenVR, "Could not submit {} eye texture : {}", Eye, static_cast<int>(Error));
+		FORERUNNER_WARN(OpenVR, "Could not submit {} eye texture: {}", Eye, static_cast<int>(Error));
 	}
 
 	VRCompositor->PostPresentHandoff();
@@ -284,7 +293,7 @@ bool OpenVR::GetBoolInput(InputBindingID ID) const
 
 bool OpenVR::GetBoolInput(InputBindingID ID, bool& bHasChanged) const
 {
-	if (!VRSystem)
+	if (!VRInput)
 	{
 		FORERUNNER_WARN(OpenVR, "Attempted to get input binding before initialising");
 		return false;
@@ -305,7 +314,7 @@ bool OpenVR::GetBoolInput(InputBindingID ID, bool& bHasChanged) const
 
 Vector2 OpenVR::GetVector2Input(InputBindingID ID) const
 {
-	if (!VRSystem)
+	if (!VRInput)
 	{
 		FORERUNNER_WARN(OpenVR, "Attempted to get input binding before initialising");
 		return Vector2();
@@ -320,4 +329,42 @@ Vector2 OpenVR::GetVector2Input(InputBindingID ID) const
 	}
 
 	return Vector2(Analog.x, Analog.y);
+}
+
+InputBindingID OpenVR::RegisterActionSet(const std::string& Set)
+{
+	if (!VRInput)
+	{
+		FORERUNNER_WARN(OpenVR, "Attempted to register action set before initialising");
+		return InputBindingID();
+	}
+
+	vr::VRActionSetHandle_t NewSet;
+	VRInput->GetActionSetHandle(("/actions/" + Set).c_str(), &NewSet);
+	FORERUNNER_LOG(OpenVR, "Registered ActionSet {} with id {}", Set, NewSet);
+
+	return NewSet;
+}
+
+void OpenVR::ActivateActionSet(InputBindingID ID)
+{
+	for (vr::VRActiveActionSet_t& Set : ActiveActionSets)
+	{
+		if (Set.ulActionSet == ID)
+		{
+			return;
+		}
+	}
+
+	vr::VRActiveActionSet_t& NewSet = ActiveActionSets.emplace_back();
+	NewSet.ulActionSet = ID;
+	NewSet.ulRestrictedToDevice = vr::k_ulInvalidInputValueHandle;
+}
+
+void OpenVR::DeactivateActionSet(InputBindingID ID)
+{
+	std::erase_if(ActiveActionSets, [ID](vr::VRActiveActionSet_t& Set)
+	{
+		return Set.ulActionSet == ID;
+	});
 }

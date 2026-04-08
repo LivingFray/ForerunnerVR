@@ -507,3 +507,16 @@ void EmulatedVR::UpdateKeyInputs()
 	}
 	*/
 }
+
+InputBindingID EmulatedVR::RegisterActionSet(const std::string& Set)
+{
+	return InputBindingID();
+}
+
+void EmulatedVR::ActivateActionSet(InputBindingID ID)
+{
+}
+
+void EmulatedVR::DeactivateActionSet(InputBindingID ID)
+{
+}

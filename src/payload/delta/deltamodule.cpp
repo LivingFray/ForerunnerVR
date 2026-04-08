@@ -67,6 +67,7 @@ bool DeltaModule::Initialise()
 	// TODO: These might need moving too
 
 	//Render.Init();
+	Input.RegisterInputs();
 
 	return true;
 }
@@ -102,8 +103,6 @@ void DeltaModule::Present()
 		VR->SetDevice(g_device());
 		VR->SetDeviceContext(g_device_context());
 		VR->Init();
-
-		Input.RegisterInputs();
 
 		Render.Init();
 		bHasInit = true;
