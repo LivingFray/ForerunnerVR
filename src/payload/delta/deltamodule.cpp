@@ -9,6 +9,7 @@
 #include "payload/delta/blam/game/players.h"
 #include "payload/delta/blam/interface/first_person_weapons.h"
 #include "payload/delta/blam/interface/interface.h"
+#include "payload/delta/blam/interface/hud.h"
 #include "payload/delta/blam/main/main_render.h"
 #include "payload/delta/blam/main/main_time.h"
 #include "payload/delta/blam/objects/objects.h"
@@ -159,6 +160,7 @@ bool DeltaModule::FindGlobals()
 	bSuccess |= global_window_parameters.Find();
 	bSuccess |= g_delta_time.Find();
 	bSuccess |= g_hud_scaling.Find();
+	bSuccess |= hud_set_size_and_safe_area.Find();
 
 	return bSuccess;
 }

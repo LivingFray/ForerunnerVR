@@ -1,5 +1,6 @@
 #include "interface.h"
 
+#include "payload/delta/blam/interface/hud.h"
 #include "payload/delta/blam/math/integer_math.h"
 #include "payload/delta/blam/rasterizer/rasterizer_globals.h"
 #include "payload/delta/blam/render/render.h"
@@ -71,8 +72,7 @@ void interface_draw_screen::Patch()
 	rectangle2d OriginalUIWindowBounds = global_window_parameters().camera.window_bounds;
 	int32_t OriginalSizeX = g_rasterizer_globals().size_x;
 	int32_t OriginalSizeY = g_rasterizer_globals().size_y;
-
-	hud_scaling OriginalHUDScale = g_hud_scaling();
+	rectangle2d OriginalRasterizerBounds = g_rasterizer_globals().screen_bounds;
 
 	// Modify window bounds to reflect UI scale
 	g_render_camera().viewport_bounds.x0 = 0;
@@ -97,12 +97,10 @@ void interface_draw_screen::Patch()
 
 	g_rasterizer_globals().size_x = DeltaModule::Get().Render.GetUIWidth();
 	g_rasterizer_globals().size_y = DeltaModule::Get().Render.GetUIHeight();
+	g_rasterizer_globals().screen_bounds = g_render_camera().viewport_bounds;
 
-	const float HUDScaleFactor = (DeltaModule::Get().Render.GetUIHeight() / static_cast<float>(OriginalSizeY));
-
-	// TODO: Text has its own scale factor (because of course it does)
-	g_hud_scaling().main = OriginalHUDScale.main * HUDScaleFactor;
-	g_hud_scaling().crosshair = OriginalHUDScale.crosshair * HUDScaleFactor;
+	// Refresh hud scaling
+	hud_set_size_and_safe_area(-1, -1);
 
 	// Draw the UI
 	DeltaModule::Get().bRenderingHUD = true;
@@ -116,8 +114,10 @@ void interface_draw_screen::Patch()
 	global_window_parameters().camera.window_bounds = OriginalUIWindowBounds;
 	g_rasterizer_globals().size_x = OriginalSizeX;
 	g_rasterizer_globals().size_y = OriginalSizeY;
+	g_rasterizer_globals().screen_bounds = OriginalRasterizerBounds;
 
-	g_hud_scaling() = OriginalHUDScale;
+	// Refresh hud scaling
+	hud_set_size_and_safe_area(-1, -1);
 
 	// Restore the original render target
 	g_output_target() = ActiveRenderTarget;
