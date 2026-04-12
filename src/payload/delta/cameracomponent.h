@@ -7,8 +7,8 @@
 class CameraComponent
 {
 public:
-	// Update the look vector of the player
-	void UpdatePlayerCamera(struct simulation_update* update);
+	// Calculate the updated pitch/yaw of the player, including any yaw input from snap/smooth turning
+	void UpdatePlayerCamera(float InYaw, float& OutYaw, float& OutPitch);
 
 	// Update the camera at render time
 	void UpdateRenderCamera(struct render_window* render_window, int view_index);
@@ -40,6 +40,8 @@ public:
 	}
 
 protected:
+
+	void UpdateOffsetMatrix();
 
 	Vector3 TrueCameraLocation;
 	Vector3 TrueCameraForward;

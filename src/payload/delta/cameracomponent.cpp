@@ -12,10 +12,15 @@
 #include "common/utils/vectors.h"
 #include "common/vr/IVR.h"
 
-void CameraComponent::UpdatePlayerCamera(simulation_update* update)
+void CameraComponent::UpdatePlayerCamera(float InYaw, float& OutYaw, float& OutPitch)
 {
-	player_action& action = update->player_actions[0];
-
+	// Apply any turn inputs first
+	if (abs(InYaw) > FLT_EPSILON)
+	{
+		OffsetYaw += InYaw;
+		UpdateOffsetMatrix();
+	}
+	
 	const Matrix4 HMDMatrix = GetCameraTransform();
 
 	// Extract the forward vector from the HMD matrix
@@ -25,14 +30,10 @@ void CameraComponent::UpdatePlayerCamera(simulation_update* update)
 	HMDFacing.normalize();
 
 	// Calculate yaw (rotation around the vertical axis)
-	const float Yaw = atan2f(HMDFacing.y, HMDFacing.x);
+	OutYaw = atan2f(HMDFacing.y, HMDFacing.x);
 
 	// Calculate pitch (rotation around the horizontal axis)
-	const float Pitch = atan2f(HMDFacing.z, sqrt(HMDFacing.x * HMDFacing.x + HMDFacing.y * HMDFacing.y));
-
-	// Update the player's action rotation
-	action.rotation.yaw = Yaw;
-	action.rotation.pitch = Pitch;
+	OutPitch = atan2f(HMDFacing.z, sqrt(HMDFacing.x * HMDFacing.x + HMDFacing.y * HMDFacing.y));
 }
 
 void CameraComponent::UpdateRenderCamera(struct render_window* render_window, int view_index)
@@ -51,6 +52,8 @@ void CameraComponent::UpdateRenderCamera(struct render_window* render_window, in
 		TrueCameraLocation = SameCast<Vector3>(render_window->rasterizer_camera.position);
 		TrueCameraForward = SameCast<Vector3>(render_window->rasterizer_camera.forward);
 		TrueCameraUp = SameCast<Vector3>(render_window->rasterizer_camera.up);
+
+		//FORERUNNER_LOG(Delta, "Camera pos: {}", CameraPos);
 	}
 
 	// TODO: HMD Transform
@@ -91,7 +94,7 @@ void CameraComponent::RecentreCamera()
 	OffsetYaw = 0.0f; // TODO: Extract yaw
 	OffsetLocation = Vector3FromVector4(CurrentTransform * Vector4FromPoint(Vector3()));
 
-	OffsetMatrix = Matrix4().translate(-OffsetLocation).rotateZ(-OffsetYaw);
+	UpdateOffsetMatrix();
 }
 
 Matrix4 CameraComponent::GetCameraTransform() const
@@ -102,4 +105,9 @@ Matrix4 CameraComponent::GetCameraTransform() const
 Matrix4 CameraComponent::GetControllerTransform(EVR_Controller Controller) const
 {
 	return OffsetMatrix * DeltaModule::Get().VR->GetControllerTransform(Controller);
+}
+
+void CameraComponent::UpdateOffsetMatrix()
+{
+	OffsetMatrix = Matrix4().translate(-OffsetLocation).rotateZ(-OffsetYaw);
 }

@@ -18,6 +18,20 @@ NLOHMANN_JSON_SERIALIZE_ENUM(EMovementInputType, {
 	{EMovementInputType::HMD, "HMD"},
 	{EMovementInputType::LeftHand, "Left Hand"},
 	{EMovementInputType::RightHand, "Right Hand"},
+	});
+
+enum class ETurnType
+{
+	SnapTurn,
+	SmoothTurn,
+	Disabled,
+	E_MAX
+};
+
+NLOHMANN_JSON_SERIALIZE_ENUM(ETurnType, {
+	{ETurnType::SnapTurn, "Snap Turn"},
+	{ETurnType::SmoothTurn, "Smooth Turn"},
+	{ETurnType::Disabled, "Disabled"},
 });
 
 
@@ -35,7 +49,10 @@ NLOHMANN_JSON_SERIALIZE_ENUM(EMovementInputType, {
 	CFG_CAT(Forerunner) \
 		CFG_CAT(Movement) \
 			CFG_VALUE(EMovementInputType, MovementDirection, EMovementInputType::HMD, "The relative direction in which movement inputs are applied") \
-		CFG_CAT_END(Movement) \
+			CFG_VALUE(ETurnType, TurnType, ETurnType::SnapTurn, "The method used to apply the Look input to the camera.\n  Smooth: Rotate <SmoothTurnSpeed> degrees per second while input is given\n  Snap: Rotate <SnapTurnAmount> degrees once per input\n  Disabled: Only allow turning by physically moving") \
+			CFG_VALUE(float, SnapTurnAmount, 45.0f, "Angle in degrees turned per input when <TurnType> is set to 'Snap Turn'")	\
+			CFG_VALUE(float, SmoothTurnSpeed, 180.0f, "Turn rate in degrees/second turned while applying the Look input when <TurnType> is set to 'Smooth Turn'")	\
+	CFG_CAT_END(Movement) \
 	CFG_CAT_END(Forerunner)
 
 // Settings specific to Halo2

@@ -17,6 +17,7 @@ public:
 protected:
 
 	real_vector2d CalculateMovementInput();
+	float CalculateTurnInput();
 
 	void ModifyInputVector(struct Vector2& Input, EVR_Controller Controller) const;
 
@@ -24,4 +25,6 @@ protected:
 	InputBindingID BindingLook;
 
 	InputBindingID SetDefault;
+
+	bool bHadTurnInput = false;
 };

@@ -3,6 +3,8 @@
 #include <imgui.h>
 #include <string>
 
+constexpr float ValueStart = 0.67f;
+
 template<typename T>
 static std::string ToString(const T& V)
 {
@@ -17,15 +19,6 @@ static std::string ToString(const bool& V)
 	return V ? "true" : "false";
 }
 
-template<>
-static std::string ToString(const EMovementInputType& V)
-{
-	nlohmann::json Temp;
-	to_json(Temp, V);
-
-	return Temp;
-}
-
 template<typename T>
 static void AddButton(T& Value, const char* Name)
 {
@@ -34,8 +27,20 @@ static void AddButton(T& Value, const char* Name)
 
 static void AddDescription(const std::string& Desc, const std::string& DefaultValue)
 {
-	ImGui::TextColored(ImVec4(0.8f, 0.8f, 0.8f, 1.0f), Desc.c_str());
+	ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.8f, 0.8f, 0.8f, 1.0f));
+	ImGui::TextWrapped(Desc.c_str());
+	ImGui::PopStyleColor();
 	ImGui::TextColored(ImVec4(0.8f, 0.8f, 0.8f, 1.0f), "Default Value: %s", DefaultValue.c_str());
+}
+
+static void AddButtonLabel(const char* Name)
+{
+	ImGui::SetWindowFontScale(1.25f);
+	ImGui::AlignTextToFramePadding();
+	ImGui::Text(Name);
+	ImGui::SetWindowFontScale(1.0f);
+	ImGui::SameLine(ImGui::GetWindowWidth() * ValueStart);
+	ImGui::SetNextItemWidth(ImGui::GetWindowWidth() * (1.0f - ValueStart) - 10.0f);
 }
 
 template<>
@@ -51,18 +56,22 @@ static void AddButton<bool>(bool& Value, const char* Name)
 	ImGui::PopID();
 }
 
+template<>
+static void AddButton<float>(float& Value, const char* Name)
+{
+	AddButtonLabel(Name);
+	ImGui::PushID(Name);
+	ImGui::InputFloat("##inputfloat", &Value);
+	ImGui::PopID();
+}
+
 template <typename T>
 concept IsSerialisedEnum = requires { T::E_MAX; };
 
 template<IsSerialisedEnum T>
 static void AddButton(T& Value, const char* Name)
 {
-	ImGui::SetWindowFontScale(1.25f);
-	ImGui::AlignTextToFramePadding();
-	ImGui::Text(Name);
-	ImGui::SetWindowFontScale(1.0f);
-	ImGui::SameLine(ImGui::GetWindowWidth() / 2);
-	ImGui::SetNextItemWidth(ImGui::GetWindowWidth() / 2 - 10.0f);
+	AddButtonLabel(Name);
 	ImGui::PushID(Name);
 	if (ImGui::BeginCombo("##enum", ToString(Value).c_str()))
 	{
@@ -84,6 +93,16 @@ static void AddButton(T& Value, const char* Name)
 	}
 	ImGui::PopID();
 }
+
+template<IsSerialisedEnum T>
+static std::string ToString(const T& V)
+{
+	nlohmann::json Temp;
+	to_json(Temp, V);
+
+	return Temp;
+}
+
 
 void DrawConfig()
 {

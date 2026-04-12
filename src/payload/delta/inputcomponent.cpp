@@ -3,6 +3,7 @@
 #include "deltamodule.h"
 
 #include "payload/delta/blam/game/players.h"
+#include "payload/delta/blam/main/main_time.h"
 #include "payload/delta/blam/simulation/simulation.h"
 
 #include "common/utils/utils.h"
@@ -28,6 +29,8 @@ void InputComponent::UpdateInputs(simulation_update* update)
 
 	// Throttle is movement input, relative to the character facing direction (+X = forward, +Y = left)
 	action.throttle = CalculateMovementInput();
+	// Delegate rotation calculations to camera component
+	DeltaModule::Get().Camera.UpdatePlayerCamera(CalculateTurnInput(), action.rotation.yaw, action.rotation.pitch);
 }
 
 real_vector2d InputComponent::CalculateMovementInput()
@@ -54,20 +57,64 @@ real_vector2d InputComponent::CalculateMovementInput()
 	return real_vector2d{Input.y, -Input.x};
 }
 
-static float AngleBetweenVector2(const Vector2& v1, const Vector2& v2)
+float InputComponent::CalculateTurnInput()
 {
-	const float dot = v1.dot(v2);
-	const float determinant = v1.x * v2.y - v1.y * v2.x;
-	const float angle = atan2(determinant, dot);
-	return angle;
+	IVR* VR = DeltaModule::Get().VR;
+	Vector2 Input = VR->GetVector2Input(BindingLook);
+
+	switch (Config::Forerunner::Movement::TurnType)
+	{
+		case ETurnType::SnapTurn:
+		{
+			// Latch the snap input around half pressed
+			constexpr float SnapMin = 0.4f;
+			constexpr float SnapMax = 0.6f;
+
+			if (bHadTurnInput)
+			{
+				if (abs(Input.x) < SnapMin)
+				{
+					bHadTurnInput = false;
+				}
+			}
+			else
+			{
+				if (abs(Input.x) > SnapMax)
+				{
+					bHadTurnInput = true;
+					return (Input.x > 0.0f ? 1.0f : -1.0f) * Config::Forerunner::Movement::SnapTurnAmount;
+				}
+			}
+
+			return 0.0f;
+		}
+		case ETurnType::SmoothTurn:
+		{
+			return Config::Forerunner::Movement::SmoothTurnSpeed * Input.x * g_delta_time();
+		}
+		case ETurnType::Disabled:
+			return 0.0f;
+		default:
+			break;
+	}
+
+	return 0.0f;
 }
 
-static Vector2 RotateVector2(const Vector2& v, float angle)
+static float AngleBetweenVector2(const Vector2& V1, const Vector2& V2)
 {
-	Vector2 rotated;
-	rotated.x = v.x * cos(angle) - v.y * sin(angle);
-	rotated.y = v.x * sin(angle) + v.y * cos(angle);
-	return rotated;
+	const float Dot = V1.dot(V2);
+	const float Determinant = V1.x * V2.y - V1.y * V2.x;
+	const float Angle = atan2(Determinant, Dot);
+	return Angle;
+}
+
+static Vector2 RotateVector2(const Vector2& V, float Angle)
+{
+	Vector2 Rotated;
+	Rotated.x = V.x * cos(Angle) - V.y * sin(Angle);
+	Rotated.y = V.x * sin(Angle) + V.y * cos(Angle);
+	return Rotated;
 }
 
 void InputComponent::ModifyInputVector(Vector2& Input, EVR_Controller Controller) const
@@ -80,6 +127,6 @@ void InputComponent::ModifyInputVector(Vector2& Input, EVR_Controller Controller
 	Vector3 CameraFacing = HMDTransform.getLeftAxis();
 	Vector3 ContollerFacing = ControllerTransform.getLeftAxis();
 
-	const float angle = AngleBetweenVector2(Vector2(CameraFacing.x, CameraFacing.y), Vector2(ContollerFacing.x, ContollerFacing.y));
-	Input = RotateVector2(Input, angle);
+	const float Angle = AngleBetweenVector2(Vector2(CameraFacing.x, CameraFacing.y), Vector2(ContollerFacing.x, ContollerFacing.y));
+	Input = RotateVector2(Input, Angle);
 }
