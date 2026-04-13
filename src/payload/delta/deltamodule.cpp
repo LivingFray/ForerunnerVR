@@ -161,6 +161,7 @@ bool DeltaModule::FindGlobals()
 	bSuccess |= g_delta_time.Find();
 	bSuccess |= g_hud_scaling.Find();
 	bSuccess |= hud_set_size_and_safe_area.Find();
+	bSuccess |= interpolation_get_object_position.Find();
 
 	return bSuccess;
 }

@@ -36,6 +36,9 @@ void CameraComponent::UpdatePlayerCamera(float InYaw, float& OutYaw, float& OutP
 	OutPitch = atan2f(HMDFacing.z, sqrt(HMDFacing.x * HMDFacing.x + HMDFacing.y * HMDFacing.y));
 }
 
+// TODO: Config/ignore + use real player height
+constexpr float PlayerHeight = 0.257572f;
+
 void CameraComponent::UpdateRenderCamera(struct render_window* render_window, int view_index)
 {
 	const EVR_Eye Eye = view_index == 0 ? EVR_Eye::Left : EVR_Eye::Right;
@@ -45,15 +48,21 @@ void CameraComponent::UpdateRenderCamera(struct render_window* render_window, in
 	render_window->rasterizer_camera.vertical_field_of_view = FOV;
 	render_window->render_camera.vertical_field_of_view = FOV;
 
-	Vector3 CameraPos = SameCast<Vector3>(render_window->rasterizer_camera.position);
+
+	// TODO: Vehicles + cutscenes will ruin this
+	// TODO: Crouch will also break this
+	real_vector3d InterpolatedPosition;
+	interpolation_get_object_position(players_get_object_id(render_window->player_index), &InterpolatedPosition);
+
+	Vector3 CameraPos = SameCast<Vector3>(InterpolatedPosition);
+	CameraPos.z += PlayerHeight;
 
 	if (view_index == 0)
 	{
+		// TODO: Remove this, used for hacky placement of viewmodel
 		TrueCameraLocation = SameCast<Vector3>(render_window->rasterizer_camera.position);
 		TrueCameraForward = SameCast<Vector3>(render_window->rasterizer_camera.forward);
 		TrueCameraUp = SameCast<Vector3>(render_window->rasterizer_camera.up);
-
-		//FORERUNNER_LOG(Delta, "Camera pos: {}", CameraPos);
 	}
 
 	// TODO: HMD Transform
