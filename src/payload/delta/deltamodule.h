@@ -26,8 +26,6 @@ public:
 
 	void Present();
 
-	class IVR* VR = nullptr;
-
 	RenderComponent Render;
 	UIComponent UI;
 	CameraComponent Camera;

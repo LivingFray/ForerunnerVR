@@ -1,9 +1,8 @@
 #include "deltamodule.h"
+#include "payload/forerunner/forerunnermodule.h"
 // Utils
 #include "common/utils/inject.h"
 #include "common/vr/IVR.h"
-#include "common/vr/emulatedvr.h"
-#include "common/vr/openvr.h"
 // Blam decomp code
 #include "payload/delta/blam/game/game.h"
 #include "payload/delta/blam/game/players.h"
@@ -29,15 +28,6 @@ bool DeltaModule::Initialise()
 		FORERUNNER_WARN(Delta, "Can't find module, game is likely not installed");
 		return false;
 	}
-
-	// TODO: This should be done at a higher level (i.e. in a forerunner module)
-#ifdef USE_EMULATOR
-	VR = new EmulatedVR();
-#else
-	VR = new OpenVR();
-#endif
-
-	VR->EarlyInit();
 
 	if (!FindGlobals())
 	{
@@ -65,9 +55,6 @@ bool DeltaModule::Initialise()
 
 	FORERUNNER_LOG(Delta, "Successfully patched");
 
-	// TODO: These might need moving too
-
-	//Render.Init();
 	Input.RegisterInputs();
 
 	return true;
@@ -88,7 +75,7 @@ void DeltaModule::PreUpdate(int ticks, float* seconds)
 {
 	if (bHasInit)
 	{
-		VR->Update(g_delta_time());
+		ForerunnerModule::Get().VR->Update(g_delta_time());
 	}
 }
 
@@ -101,14 +88,14 @@ void DeltaModule::Present()
 	// TODO: Move this
 	if (!bHasInit)
 	{
-		VR->SetDevice(g_device());
-		VR->SetDeviceContext(g_device_context());
-		VR->Init();
+		ForerunnerModule::Get().VR->SetDevice(g_device());
+		ForerunnerModule::Get().VR->SetDeviceContext(g_device_context());
+		ForerunnerModule::Get().VR->Init();
 
 		Render.Init();
 		bHasInit = true;
 
-		VR->Update(g_delta_time());
+		ForerunnerModule::Get().VR->Update(g_delta_time());
 
 		Camera.RecentreCamera();
 	}

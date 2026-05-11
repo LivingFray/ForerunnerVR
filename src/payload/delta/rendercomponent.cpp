@@ -1,5 +1,6 @@
 #include "rendercomponent.h"
 #include "deltamodule.h"
+#include "payload/forerunner/forerunnermodule.h"
 // Utils
 #include "common/vr/IVR.h"
 // Blam decomp code
@@ -214,8 +215,10 @@ void RenderComponent::Draw()
 		.h = 0.5f
 	};
 
-	DeltaModule::Get().VR->SubmitEye(EVR_Eye::Left, RenderTargetTexture, LeftEyeBounds);
-	DeltaModule::Get().VR->SubmitEye(EVR_Eye::Right, RenderTargetTexture, RightEyeBounds);
+	ForerunnerModule::Get().VR->SubmitEye(EVR_Eye::Left, RenderTargetTexture, LeftEyeBounds);
+	ForerunnerModule::Get().VR->SubmitEye(EVR_Eye::Right, RenderTargetTexture, RightEyeBounds);
+
+	ForerunnerModule::Get().MarkFrameAsVR();
 
 	// Clear UI target now we are done with it
 	const float ui_clear_color[4] = {0.0f, 0.0f, 0.0f, 0.0f};
@@ -243,6 +246,8 @@ void RenderComponent::ResizeBuffers()
 	g_swap_chain()->GetDesc(&desc);
 	UINT bufferCount = desc.BufferCount;
 
+	FORERUNNER_LOG(Delta_Render, "Delta Swapchain: {:#08x}", reinterpret_cast<int64_t>(g_swap_chain()));
+
 	FORERUNNER_LOG(Delta_Render, "g_swap_chain: {}x{} ({})", desc.BufferDesc.Width, desc.BufferDesc.Height, desc.BufferCount);
 
 	FORERUNNER_LOG(Delta_Render, "Deinitializing rasterizer");
@@ -251,8 +256,8 @@ void RenderComponent::ResizeBuffers()
 	// 2x Width to account for both eyes
 	// TODO: Scope will require a third view
 	// TODO: Need to patch splitscreen calculations to make sure it does a horizontal split (currently does vertical but looks like it can sometimes be overridden)
-	GameWidth = DeltaModule::Get().VR->GetDesiredWidth();
-	GameHeight = DeltaModule::Get().VR->GetDesiredHeight() * 2;
+	GameWidth = ForerunnerModule::Get().VR->GetDesiredWidth();
+	GameHeight = ForerunnerModule::Get().VR->GetDesiredHeight() * 2;
 
 	FORERUNNER_LOG(Delta_Render, "Setting rasterizer display size to {}x{}", GameWidth, GameHeight);
 	rasterizer_set_display_size(GameWidth, GameHeight);

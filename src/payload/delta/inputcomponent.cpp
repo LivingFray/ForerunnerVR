@@ -1,6 +1,7 @@
 #include "inputcomponent.h"
 #include "cameracomponent.h"
 #include "deltamodule.h"
+#include "payload/forerunner/forerunnermodule.h"
 
 #include "payload/delta/blam/game/players.h"
 #include "payload/delta/blam/main/main_time.h"
@@ -14,7 +15,7 @@ constexpr const char* DefaultActionSet = "delta_default";
 
 void InputComponent::RegisterInputs()
 {
-	IVR* VR = DeltaModule::Get().VR;
+	IVR* VR = ForerunnerModule::Get().VR;
 
 	BindingMove = VR->RegisterVector2Input(DefaultActionSet, "Move");
 	BindingLook = VR->RegisterVector2Input(DefaultActionSet, "Look");
@@ -35,7 +36,7 @@ void InputComponent::UpdateInputs(simulation_update* update)
 
 real_vector2d InputComponent::CalculateMovementInput()
 {
-	IVR* VR = DeltaModule::Get().VR;
+	IVR* VR = ForerunnerModule::Get().VR;
 
 	// Assume this comes from a joystick input where +x = right, +y = up
 	Vector2 Input = VR->GetVector2Input(BindingMove);
@@ -59,7 +60,7 @@ real_vector2d InputComponent::CalculateMovementInput()
 
 float InputComponent::CalculateTurnInput()
 {
-	IVR* VR = DeltaModule::Get().VR;
+	IVR* VR = ForerunnerModule::Get().VR;
 	Vector2 Input = VR->GetVector2Input(BindingLook);
 
 	switch (Config::Forerunner::Movement::TurnType)

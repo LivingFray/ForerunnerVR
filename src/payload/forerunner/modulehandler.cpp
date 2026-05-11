@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <filesystem>
+#include "payload/forerunner/forerunnermodule.h"
 #include "payload/forerunner/patch.h"
 #include "payload/delta/deltamodule.h"
 #include "common/config/config.h"
@@ -46,20 +47,7 @@ void ModuleHandler::Initialise(wchar_t* InDLLPath)
 		FORERUNNER_LOG(Forerunner, "Successfully loaded OpenVR");
 	}
 
-	FORERUNNER_LOG(Forerunner, "Patching MCC...");
-	
-	bool bPatchSuccess = true;
-	bPatchSuccess |= CreateGameEngine::Create();
-	bPatchSuccess |= CreateGameEngine::Enable();
-
-	if (!bPatchSuccess)
-	{
-		FORERUNNER_ERROR(Forerunner, "Couldn't patch MCC");
-	}
-	else
-	{
-		FORERUNNER_LOG(Forerunner, "Successfully patched MCC");
-	}
+	ForerunnerModule::Get().Initialise();
 
 	FORERUNNER_LOG(Forerunner, "Finished Initialising");
 }
@@ -120,11 +108,4 @@ void ModuleHandler::LoadModule(GameModule GameId)
 	}
 
 	LastGameId = GameId;
-}
-
-void CreateGameEngine::Patch(void* GameState, GameModule GameId)
-{
-	Original(GameState, GameId);
-
-	ModuleHandler::Get().LoadModule(GameId);
 }

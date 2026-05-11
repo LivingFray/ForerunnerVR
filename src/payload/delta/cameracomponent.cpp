@@ -1,11 +1,10 @@
 #include "cameracomponent.h"
-#include "deltamodule.h"
+#include "payload/forerunner/forerunnermodule.h"
 #include "payload/delta/blam/game/players.h"
 #include "payload/delta/blam/main/main_render.h"
 #include "payload/delta/blam/math/real_math.h"
 #include "payload/delta/blam/render/render.h"
 #include "payload/delta/blam/render/render_cameras.h"
-#include "payload/delta/blam/simulation/simulation.h"
 
 #include "common/utils/utils.h"
 #include "common/utils/matrices.h"
@@ -43,7 +42,7 @@ void CameraComponent::UpdateRenderCamera(struct render_window* render_window, in
 {
 	const EVR_Eye Eye = view_index == 0 ? EVR_Eye::Left : EVR_Eye::Right;
 
-	float FOV = DeltaModule::Get().VR->GetVerticalFieldOfView(Eye);
+	float FOV = ForerunnerModule::Get().VR->GetVerticalFieldOfView(Eye);
 
 	render_window->rasterizer_camera.vertical_field_of_view = FOV;
 	render_window->render_camera.vertical_field_of_view = FOV;
@@ -72,7 +71,7 @@ void CameraComponent::UpdateRenderCamera(struct render_window* render_window, in
 	// TODO: Cutscenes
 	// TODO: Vehicles
 
-	Matrix4 EyeMatrix = Matrix4().scale(METRES_TO_WORLD) * GetCameraTransform() * DeltaModule::Get().VR->GetEyeTransform(Eye);
+	Matrix4 EyeMatrix = Matrix4().scale(METRES_TO_WORLD) * GetCameraTransform() * ForerunnerModule::Get().VR->GetEyeTransform(Eye);
 
 	// Add eye translation
 	CameraPos = CameraPos + Vector3FromVector4(EyeMatrix * Vector4FromPoint(Vector3()));
@@ -98,7 +97,7 @@ void CameraComponent::UpdateRenderCamera(struct render_window* render_window, in
 
 void CameraComponent::RecentreCamera()
 {
-	Matrix4 CurrentTransform = DeltaModule::Get().VR->GetHMDTransform();
+	Matrix4 CurrentTransform = ForerunnerModule::Get().VR->GetHMDTransform();
 
 	OffsetYaw = 0.0f; // TODO: Extract yaw
 	OffsetLocation = Vector3FromVector4(CurrentTransform * Vector4FromPoint(Vector3()));
@@ -108,12 +107,12 @@ void CameraComponent::RecentreCamera()
 
 Matrix4 CameraComponent::GetCameraTransform() const
 {
-	return OffsetMatrix * DeltaModule::Get().VR->GetHMDTransform();
+	return OffsetMatrix * ForerunnerModule::Get().VR->GetHMDTransform();
 }
 
 Matrix4 CameraComponent::GetControllerTransform(EVR_Controller Controller) const
 {
-	return OffsetMatrix * DeltaModule::Get().VR->GetControllerTransform(Controller);
+	return OffsetMatrix * ForerunnerModule::Get().VR->GetControllerTransform(Controller);
 }
 
 void CameraComponent::UpdateOffsetMatrix()
