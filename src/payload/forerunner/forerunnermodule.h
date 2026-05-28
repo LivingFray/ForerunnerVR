@@ -3,6 +3,11 @@
 #include "payload/forerunner/modulehandler.h"
 #include "payload/forerunner/patch.h"
 #include <dxgi.h>
+#include <cstdint>
+
+struct ID3D11Device;
+struct ID3D11DeviceContext;
+struct ID3D11Texture2D;
 
 class ForerunnerModule : public Singleton<ForerunnerModule>
 {
@@ -18,7 +23,10 @@ public:
 	void ClearNextFrameAsVR();
 
 	bool IsNextFrameInVR() const;
+	bool WasLastFrameInVR() const;
+	bool HasInitVR() const { return bHasInitVR; }
 
+	void InitVR();
 
 	class IVR* VR = nullptr;
 
@@ -26,7 +34,13 @@ private:
 	static HRESULT STDMETHODCALLTYPE HookedPresent(IDXGISwapChain* This, UINT SyncInterval, UINT Flags);
 	static HRESULT(STDMETHODCALLTYPE* OriginalPresent)(IDXGISwapChain* This, UINT SyncInterval, UINT Flags);
 
+	bool CreateBlackTextures(ID3D11Device* Device);
+
 	bool bNextFrameInVR = false;
+	bool bLastFrameInVR = false;
+	bool bHasInitVR = false;
+	bool bOverlayInitialised = false;
+	ID3D11Texture2D* BlackTextures[2] = { nullptr, nullptr }; // Left and Right eye black textures
 };
 
 PATCH("", 0x1efd44, "48 89 5c 24 10 57 48 83 ec 30 48 8b 05 ?? ?? ?? ?? 48 33 c4 48 89 44 24 28 48 8b d9 48 63 fa 48 8b 0d ?? ?? ?? ?? 48 85 c9 74 ?? 39 bb", CreateGameEngine, void, void* GameState, GameModule GameId);

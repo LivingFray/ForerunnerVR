@@ -3,6 +3,7 @@
 #include "common/utils/matrices.h"
 #include "common/utils/vectors.h"
 #include "common/utils/log.h"
+#include <mutex>
 
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
@@ -18,12 +19,11 @@ class EmulatedVR : public IVR
 public:
 	// Inherited via IVR
 	bool EarlyInit() override;
-	bool Init() override;
+	bool Init(struct ID3D11Device* Device, struct ID3D11DeviceContext* Context) override;
 	void Shutdown() override;
 	void Update(float DeltaTime) override;
 	void SubmitEye(EVR_Eye Eye, struct ID3D11Texture2D* Texture, const VR_Bounds& ViewBounds) override;
-	void SetDevice(ID3D11Device* Device) override;
-	void SetDeviceContext(ID3D11DeviceContext* Context) override;
+	void EndFrame() override;
 	int32_t GetDesiredWidth() const override;
 	int32_t GetDesiredHeight() const override;
 	virtual float GetVerticalFieldOfView(EVR_Eye Eye) const override;
@@ -38,6 +38,9 @@ public:
 	InputBindingID RegisterActionSet(const std::string& Set) override;
 	void ActivateActionSet(InputBindingID ID) override;
 	void DeactivateActionSet(InputBindingID ID) override;
+	void DrawOverlay(struct ID3D11DeviceContext* Context, struct ID3D11Texture2D* SourceTexture) override;
+	void ShowOverlay() override;
+	void HideOverlay() override;
 
 protected:
 	bool CreateVRWindow();
@@ -54,4 +57,5 @@ protected:
 	float CameraYaw = 0.0f;
 	float CameraPitch = 0.0f;
 	Vector3 CameraOffset = Vector3(0.0f, 0.0f, 0.05f);
+	mutable std::mutex PoseMutex;
 };

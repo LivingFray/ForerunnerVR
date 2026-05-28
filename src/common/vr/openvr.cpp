@@ -1,4 +1,5 @@
 #include "openvr.h"
+#include "common/config/config.h"
 #include "common/utils/matrices.h"
 #include "common/utils/utils.h"
 #include <filesystem>
@@ -7,6 +8,7 @@
 #define NOMINMAX
 #define UNICODE
 #include <windows.h>
+#include <d3d11.h>
 
 Matrix4 ConvertSteamVRMatrixToMatrix4(const vr::HmdMatrix34_t& matPose)
 {
@@ -129,13 +131,29 @@ bool OpenVR::EarlyInit()
 	return true;
 }
 
-bool OpenVR::Init()
+bool OpenVR::Init(ID3D11Device* InDevice, ID3D11DeviceContext* InContext)
 {
-	return true;
+	Device = InDevice;
+	Context = InContext;
+
+	const bool bOverlayInit = InitOverlay();
+
+	return Device && Context && bOverlayInit;
 }
 
 void OpenVR::Shutdown()
 {
+	if (CachedSourceTexture)
+	{
+		CachedSourceTexture->Release();
+		CachedSourceTexture = nullptr;
+	}
+	if (CachedSourceSRV)
+	{
+		CachedSourceSRV->Release();
+		CachedSourceSRV = nullptr;
+	}
+
 	vr::VR_Shutdown();
 }
 
@@ -146,7 +164,15 @@ void OpenVR::Update(float DeltaTime)
 		return;
 	}
 
-	VRCompositor->WaitGetPoses(RenderPoses, vr::k_unMaxTrackedDeviceCount, GamePoses, vr::k_unMaxTrackedDeviceCount);
+	vr::TrackedDevicePose_t NewRenderPoses[vr::k_unMaxTrackedDeviceCount];
+	vr::TrackedDevicePose_t NewGamePoses[vr::k_unMaxTrackedDeviceCount];
+	VRCompositor->WaitGetPoses(NewRenderPoses, vr::k_unMaxTrackedDeviceCount, NewGamePoses, vr::k_unMaxTrackedDeviceCount);
+
+	{
+		std::lock_guard<std::mutex> Lock(PoseMutex);
+		memcpy(RenderPoses, NewRenderPoses, sizeof(RenderPoses));
+		memcpy(GamePoses, NewGamePoses, sizeof(GamePoses));
+	}
 
 	if (ActiveActionSets.size() > 0)
 	{
@@ -180,18 +206,11 @@ void OpenVR::SubmitEye(EVR_Eye Eye, ID3D11Texture2D* Texture, const VR_Bounds& V
 	{
 		FORERUNNER_WARN(OpenVR, "Could not submit {} eye texture: {}", Eye, static_cast<int>(Error));
 	}
+}
 
+void OpenVR::EndFrame()
+{
 	VRCompositor->PostPresentHandoff();
-}
-
-void OpenVR::SetDevice(ID3D11Device* InDevice)
-{
-	Device = InDevice;
-}
-
-void OpenVR::SetDeviceContext(ID3D11DeviceContext* InContext)
-{
-	Context = InContext;
 }
 
 int32_t OpenVR::GetDesiredWidth() const
@@ -217,7 +236,13 @@ Matrix4 OpenVR::GetHMDTransform() const
 		return Matrix4();
 	}
 
-	return ConvertSteamVRMatrixToMatrix4(RenderPoses[vr::k_unTrackedDeviceIndex_Hmd].mDeviceToAbsoluteTracking);
+	vr::TrackedDevicePose_t HmdPose;
+	{
+		std::lock_guard<std::mutex> Lock(PoseMutex);
+		HmdPose = RenderPoses[vr::k_unTrackedDeviceIndex_Hmd];
+	}
+
+	return ConvertSteamVRMatrixToMatrix4(HmdPose.mDeviceToAbsoluteTracking);
 }
 
 Matrix4 OpenVR::GetEyeTransform(EVR_Eye Eye) const
@@ -241,9 +266,13 @@ Matrix4 OpenVR::GetControllerTransform(EVR_Controller Controller) const
 	
 	vr::TrackedDeviceIndex_t controllerIndex = VRSystem->GetTrackedDeviceIndexForControllerRole(Controller == EVR_Controller::Left ? vr::TrackedControllerRole_LeftHand : vr::TrackedControllerRole_RightHand);
 
-	Matrix4 outMatrix;
+	vr::TrackedDevicePose_t ControllerPose;
+	{
+		std::lock_guard<std::mutex> Lock(PoseMutex);
+		ControllerPose = RenderPoses[controllerIndex];
+	}
 
-	return ConvertSteamVRMatrixToMatrix4(RenderPoses[controllerIndex].mDeviceToAbsoluteTracking);
+	return ConvertSteamVRMatrixToMatrix4(ControllerPose.mDeviceToAbsoluteTracking);
 }
 
 static std::string SetAndActionToString(const std::string& Set, const std::string& Action)
@@ -299,7 +328,7 @@ bool OpenVR::GetBoolInput(InputBindingID ID, bool& bHasChanged) const
 		return false;
 	}
 
-	static vr::InputDigitalActionData_t Digital;
+	vr::InputDigitalActionData_t Digital;
 	vr::EVRInputError InputErr = VRInput->GetDigitalActionData(ID, &Digital, sizeof(vr::InputDigitalActionData_t), vr::k_ulInvalidInputValueHandle);
 	if (InputErr != vr::VRInputError_None)
 	{
@@ -320,7 +349,7 @@ Vector2 OpenVR::GetVector2Input(InputBindingID ID) const
 		return Vector2();
 	}
 
-	static vr::InputAnalogActionData_t Analog;
+	vr::InputAnalogActionData_t Analog;
 	vr::EVRInputError InputErr = VRInput->GetAnalogActionData(ID, &Analog, sizeof(vr::InputAnalogActionData_t), vr::k_ulInvalidInputValueHandle);
 	if (InputErr != vr::VRInputError_None)
 	{
@@ -367,4 +396,175 @@ void OpenVR::DeactivateActionSet(InputBindingID ID)
 	{
 		return Set.ulActionSet == ID;
 	});
+}
+
+bool OpenVR::InitOverlay()
+{
+	if (!VROverlay)
+	{
+		FORERUNNER_ERROR(OpenVR, "Cannot initialize overlay, VROverlay is null");
+		return false;
+	}
+
+	// Create the overlay
+	vr::EVROverlayError OverlayErr = VROverlay->CreateOverlay(
+		"livingfray.forerunner.overlay",
+		"Forerunner Overlay",
+		&OverlayHandle
+	);
+
+	if (OverlayErr != vr::VROverlayError_None)
+	{
+		FORERUNNER_ERROR(OpenVR, "Failed to create overlay: {}", static_cast<int32_t>(OverlayErr));
+		return false;
+	}
+
+	// Set overlay properties
+	VROverlay->SetOverlayWidthInMeters(OverlayHandle, Config::Forerunner::UI::Menu::Scale);
+	VROverlay->SetOverlayAlpha(OverlayHandle, 1.0f);
+
+	// Set the overlay to be rendered in front of the world
+	vr::HmdMatrix34_t transform = {
+		1, 0, 0, 0,
+		0, 1, 0, 0,
+		0, 0, 1, -2.0f
+	};
+	VROverlay->SetOverlayTransformAbsolute(OverlayHandle, vr::TrackingUniverseStanding, &transform);
+
+	FORERUNNER_LOG(OpenVR, "Successfully created overlay");
+	return true;
+}
+
+void OpenVR::DrawOverlay(ID3D11DeviceContext* InContext, ID3D11Texture2D* SourceTexture)
+{
+	if (!VROverlay || !OverlayHandle || OverlayHandle == vr::k_ulOverlayHandleInvalid)
+	{
+		return;
+	}
+
+	if (!Device || !SourceTexture)
+	{
+		return;
+	}
+
+	D3D11_TEXTURE2D_DESC desc{};
+	SourceTexture->GetDesc(&desc);
+
+	// Create a shader-readable texture if needed
+	if (!CachedSourceTexture || CachedSourceWidth != desc.Width || CachedSourceHeight != desc.Height)
+	{
+		if (CachedSourceTexture)
+		{
+			CachedSourceTexture->Release();
+		}
+		if (CachedSourceSRV)
+		{
+			CachedSourceSRV->Release();
+		}
+
+		D3D11_TEXTURE2D_DESC copyDesc = desc;
+		copyDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+		copyDesc.CPUAccessFlags = 0;
+		copyDesc.MiscFlags = 0;
+		copyDesc.Usage = D3D11_USAGE_DEFAULT;
+
+		HRESULT hr = Device->CreateTexture2D(&copyDesc, nullptr, &CachedSourceTexture);
+		if (FAILED(hr))
+		{
+			FORERUNNER_ERROR(OpenVR, "Failed to create cached texture");
+			return;
+		}
+
+		hr = Device->CreateShaderResourceView(CachedSourceTexture, nullptr, &CachedSourceSRV);
+		if (FAILED(hr))
+		{
+			FORERUNNER_ERROR(OpenVR, "Failed to create shader resource view");
+			CachedSourceTexture->Release();
+			CachedSourceTexture = nullptr;
+			return;
+		}
+
+		CachedSourceWidth = desc.Width;
+		CachedSourceHeight = desc.Height;
+	}
+
+	// Copy the source texture to our shader-readable copy
+	InContext->CopyResource(CachedSourceTexture, SourceTexture);
+
+	// Set the texture for the overlay
+	vr::Texture_t Texture = { CachedSourceTexture, vr::TextureType_DirectX, vr::ColorSpace_Auto };
+	vr::EVROverlayError OverlayErr = VROverlay->SetOverlayTexture(OverlayHandle, &Texture);
+
+	if (OverlayErr != vr::VROverlayError_None)
+	{
+		FORERUNNER_WARN(OpenVR, "Failed to set overlay texture: {}", static_cast<int32_t>(OverlayErr));
+	}
+
+	// Reposition overlay to always be in front of the HMD (horizontally)
+	if (Config::Forerunner::UI::Menu::FollowHead || bOverlayPositionNeedsUpdate)
+	{
+		const Vector3& OverlayOffset = Config::Forerunner::UI::Menu::Offset;
+
+		vr::HmdMatrix34_t& HMD = RenderPoses[vr::k_unTrackedDeviceIndex_Hmd].mDeviceToAbsoluteTracking;
+
+		const Vector3 HmdLocation(HMD.m[0][3], HMD.m[1][3], HMD.m[2][3]);
+
+		// Get facing direction
+		Vector3 FacingDirection(HMD.m[0][2], 0.0f, HMD.m[2][2]);
+		FacingDirection.normalize();
+
+		Vector3 RightDirection(FacingDirection.z, 0.0f, -FacingDirection.x);
+
+		// Use facing + right directions to apply local offsets
+		Vector3 OverlayPosition = HmdLocation;
+		OverlayPosition += (FacingDirection * OverlayOffset.z);
+		OverlayPosition += (RightDirection * OverlayOffset.x);
+		OverlayPosition.y += OverlayOffset.y;
+
+		// Convert back to matrix
+		vr::HmdMatrix34_t Transform = {
+			RightDirection.x,          0.0f,                 FacingDirection.x,        OverlayPosition.x,
+			RightDirection.y,          1.0f,                 FacingDirection.y,        OverlayPosition.y,
+			RightDirection.z,          0.0f,                 FacingDirection.z,        OverlayPosition.z
+		};
+
+		// Update transform
+		VROverlay->SetOverlayTransformAbsolute(OverlayHandle, vr::TrackingUniverseStanding, &Transform);
+
+		bOverlayPositionNeedsUpdate = false;
+	}
+}
+
+void OpenVR::ShowOverlay()
+{
+	FORERUNNER_LOG(OpenVR, "Showing overlay");
+
+	if (!VROverlay || !OverlayHandle || OverlayHandle == vr::k_ulOverlayHandleInvalid)
+	{
+		return;
+	}
+
+	vr::EVROverlayError OverlayErr = VROverlay->ShowOverlay(OverlayHandle);
+	if (OverlayErr != vr::VROverlayError_None)
+	{
+		FORERUNNER_WARN(OpenVR, "Failed to show overlay: {}", static_cast<int32_t>(OverlayErr));
+	}
+
+	bOverlayPositionNeedsUpdate = true;
+}
+
+void OpenVR::HideOverlay()
+{
+	FORERUNNER_LOG(OpenVR, "Hiding overlay");
+
+	if (!VROverlay || !OverlayHandle || OverlayHandle == vr::k_ulOverlayHandleInvalid)
+	{
+		return;
+	}
+
+	vr::EVROverlayError OverlayErr = VROverlay->HideOverlay(OverlayHandle);
+	if (OverlayErr != vr::VROverlayError_None)
+	{
+		FORERUNNER_WARN(OpenVR, "Failed to hide overlay: {}", static_cast<int32_t>(OverlayErr));
+	}
 }

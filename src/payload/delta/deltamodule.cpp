@@ -73,14 +73,12 @@ static bool bHasInit = false;
 
 void DeltaModule::PreUpdate(int ticks, float* seconds)
 {
-	if (bHasInit)
-	{
-		ForerunnerModule::Get().VR->Update(g_delta_time());
-	}
 }
 
 void DeltaModule::PostUpdate(int ticks, float* seconds)
 {
+	// TODO: This assumes update + render are on the same thread, which is only true for original graphics
+	ForerunnerModule::Get().VR->Update(g_delta_time());
 }
 
 void DeltaModule::Present()
@@ -88,14 +86,8 @@ void DeltaModule::Present()
 	// TODO: Move this
 	if (!bHasInit)
 	{
-		ForerunnerModule::Get().VR->SetDevice(g_device());
-		ForerunnerModule::Get().VR->SetDeviceContext(g_device_context());
-		ForerunnerModule::Get().VR->Init();
-
 		Render.Init();
 		bHasInit = true;
-
-		ForerunnerModule::Get().VR->Update(g_delta_time());
 
 		Camera.RecentreCamera();
 	}

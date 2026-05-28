@@ -1,5 +1,7 @@
 #include "config_editor.h"
 #include "common/config/config.h"
+#include "common/utils/vectors.h"
+#include "common/utils/utils.h"
 #include <imgui.h>
 #include <string>
 
@@ -18,6 +20,25 @@ static std::string ToString(const bool& V)
 {
 	return V ? "true" : "false";
 }
+
+template<>
+static std::string ToString(const Vector2& V)
+{
+	return std::format("{}", V);
+}
+
+template<>
+static std::string ToString(const Vector3& V)
+{
+	return std::format("{}", V);
+}
+
+template<>
+static std::string ToString(const Vector4& V)
+{
+	return std::format("{}", V);
+}
+
 
 template<typename T>
 static void AddButton(T& Value, const char* Name)
@@ -62,6 +83,33 @@ static void AddButton<float>(float& Value, const char* Name)
 	AddButtonLabel(Name);
 	ImGui::PushID(Name);
 	ImGui::InputFloat("##inputfloat", &Value);
+	ImGui::PopID();
+}
+
+template<>
+static void AddButton<Vector2>(Vector2& Value, const char* Name)
+{
+	AddButtonLabel(Name);
+	ImGui::PushID(Name);
+	ImGui::InputFloat2("##inputfloat", &Value.x);
+	ImGui::PopID();
+}
+
+template<>
+static void AddButton<Vector3>(Vector3& Value, const char* Name)
+{
+	AddButtonLabel(Name);
+	ImGui::PushID(Name);
+	ImGui::InputFloat3("##inputfloat", &Value.x);
+	ImGui::PopID();
+}
+
+template<>
+static void AddButton<Vector4>(Vector4& Value, const char* Name)
+{
+	AddButtonLabel(Name);
+	ImGui::PushID(Name);
+	ImGui::InputFloat4("##inputfloat", &Value.x);
 	ImGui::PopID();
 }
 

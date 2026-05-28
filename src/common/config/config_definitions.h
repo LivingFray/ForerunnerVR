@@ -1,5 +1,6 @@
 #pragma once
 #include "json.hpp"
+#include "common/utils/vectors.h"
 
 // Define all configs used across the project here via a single X-Macro
 // Must be done here so the launcher can edit game specific configs safely
@@ -34,7 +35,9 @@ NLOHMANN_JSON_SERIALIZE_ENUM(ETurnType, {
 	{ETurnType::Disabled, "Disabled"},
 });
 
-
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Vector2, x, y);
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Vector3, x, y, z);
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Vector4, x, y, z, w);
 
 // Settings for the launcher exe
 #define CFG_LAUNCHER \
@@ -52,7 +55,14 @@ NLOHMANN_JSON_SERIALIZE_ENUM(ETurnType, {
 			CFG_VALUE(ETurnType, TurnType, ETurnType::SnapTurn, "The method used to apply the Look input to the camera.\n  Smooth: Rotate <SmoothTurnSpeed> degrees per second while input is given\n  Snap: Rotate <SnapTurnAmount> degrees once per input\n  Disabled: Only allow turning by physically moving") \
 			CFG_VALUE(float, SnapTurnAmount, 45.0f, "Angle in degrees turned per input when <TurnType> is set to 'Snap Turn'")	\
 			CFG_VALUE(float, SmoothTurnSpeed, 180.0f, "Turn rate in degrees/second turned while applying the Look input when <TurnType> is set to 'Smooth Turn'")	\
-	CFG_CAT_END(Movement) \
+		CFG_CAT_END(Movement) \
+		CFG_CAT(UI) \
+			CFG_CAT(Menu) \
+				CFG_VALUE(Vector3, Offset, Vector3(0.0f, 0.0f, -2.0f), "The relative location of the menu UI Overlay from the HMD.\nUnits are in meters, +x = right, +y = up, -z = forward") \
+				CFG_VALUE(float, Scale, 2.0f, "Width of the menu UI overlay in meters") \
+				CFG_VALUE(bool, FollowHead, false, "Move the menu UI overlay to always be in front of the HMD, rather than at a set position determined when the UI is first shown") \
+			CFG_CAT_END(Menu) \
+		CFG_CAT_END(UI) \
 	CFG_CAT_END(Forerunner)
 
 // Settings specific to Halo2

@@ -32,16 +32,15 @@ public:
 	// Early initialisation, called near startup
 	virtual bool EarlyInit() = 0;
 	// Late initialisation, called once important systems such as directx have been initialised
-	virtual bool Init() = 0;
+	virtual bool Init(struct ID3D11Device* Device, struct ID3D11DeviceContext* Context) = 0;
 	// Called when VR should end and be cleaned up gracefully
 	virtual void Shutdown() = 0;
 	// Called every frame
 	virtual void Update(float DeltaTime) = 0;
 	// Called when the game has a new frame to submit for an eye, ViewBounds defines which portion of the render target holds the current eye
 	virtual void SubmitEye(EVR_Eye Eye, struct ID3D11Texture2D* Texture, const VR_Bounds& ViewBounds = VR_Bounds{ .x = 0.0f, .y = 0.0f, .w = 1.0f, .h = 1.0f}) = 0;
-
-	virtual void SetDevice(struct ID3D11Device* Device) = 0;
-	virtual void SetDeviceContext(struct ID3D11DeviceContext* Context) = 0;
+	// Called when the frame is finished rendering and is about to be presented
+	virtual void EndFrame() = 0;
 
 	// Get the desired width of the render target for one eye
 	virtual int32_t GetDesiredWidth() const = 0;
@@ -72,6 +71,13 @@ public:
 	virtual void ActivateActionSet(InputBindingID ID) = 0;
 	// Disable an action set previously registered with RegisterActionSet
 	virtual void DeactivateActionSet(InputBindingID ID) = 0;
+
+	// Render a frame to the overlay in VR space
+	virtual void DrawOverlay(struct ID3D11DeviceContext* Context, struct ID3D11Texture2D* SourceTexture) = 0;
+	// Show the overlay
+	virtual void ShowOverlay() = 0;
+	// Hide the overlay
+	virtual void HideOverlay() = 0;
 };
 
 

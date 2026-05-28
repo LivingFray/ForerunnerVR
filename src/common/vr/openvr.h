@@ -3,6 +3,7 @@
 #include "common/utils/matrices.h"
 #include "common/utils/log.h"
 #include <openvr.h>
+#include <mutex>
 
 FORERUNNER_CREATE_LOG_CATEGORY(OpenVR);
 
@@ -11,12 +12,11 @@ class OpenVR : public IVR
 public:
 	// Inherited via IVR
 	bool EarlyInit() override;
-	bool Init() override;
+	bool Init(struct ID3D11Device* Device, struct ID3D11DeviceContext* Context) override;
 	void Shutdown() override;
 	void Update(float DeltaTime) override;
 	void SubmitEye(EVR_Eye Eye, struct ID3D11Texture2D* Texture, const VR_Bounds& ViewBounds) override;
-	void SetDevice(ID3D11Device* Device) override;
-	void SetDeviceContext(ID3D11DeviceContext* Context) override;
+	void EndFrame() override;
 	int32_t GetDesiredWidth() const override;
 	int32_t GetDesiredHeight() const override;
 	float GetVerticalFieldOfView(EVR_Eye Eye) const override;
@@ -31,8 +31,13 @@ public:
 	InputBindingID RegisterActionSet(const std::string& Set) override;
 	void ActivateActionSet(InputBindingID ID) override;
 	void DeactivateActionSet(InputBindingID ID) override;
+	void DrawOverlay(struct ID3D11DeviceContext* Context, struct ID3D11Texture2D* SourceTexture) override;
+	void ShowOverlay() override;
+	void HideOverlay() override;
 
 protected:
+
+	bool InitOverlay();
 
 	// Subsystems
 	vr::IVRSystem* VRSystem;
@@ -51,9 +56,18 @@ protected:
 	struct ID3D11Device* Device = nullptr;
 	struct ID3D11DeviceContext* Context = nullptr;
 
+	// Overlay
+	struct ID3D11Texture2D* CachedSourceTexture = nullptr;
+	struct ID3D11ShaderResourceView* CachedSourceSRV = nullptr;
+	uint32_t CachedSourceWidth = 0;
+	uint32_t CachedSourceHeight = 0;
+	vr::VROverlayHandle_t OverlayHandle = vr::k_ulOverlayHandleInvalid;
+	bool bOverlayPositionNeedsUpdate = false;
+
 	// Poses
 	vr::TrackedDevicePose_t GamePoses[vr::k_unMaxTrackedDeviceCount];
 	vr::TrackedDevicePose_t RenderPoses[vr::k_unMaxTrackedDeviceCount];
+	mutable std::mutex PoseMutex;
 
 	// Input
 	std::vector<vr::VRActiveActionSet_t> ActiveActionSets;

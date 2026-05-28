@@ -14,10 +14,12 @@ bool EmulatedVR::EarlyInit()
 	return true;
 }
 
-bool EmulatedVR::Init()
+bool EmulatedVR::Init(struct ID3D11Device* InDevice, struct ID3D11DeviceContext* InContext)
 {
 	FORERUNNER_LOG(EmuVR, "Initialising");
 
+	Device = InDevice;
+	DeviceContext = InContext;
 
 	return true;
 }
@@ -64,28 +66,37 @@ void EmulatedVR::Update(float DeltaTime)
 		DispatchMessage(&Message);
 	}
 
+	float NewYaw = CameraYaw;
+	float NewPitch = CameraPitch;
+
 	// Check numpad keys for camera rotation
 	if (GetAsyncKeyState(VK_NUMPAD4) & 0x8000)
 	{
-		CameraYaw -= DeltaTime;
+		NewYaw -= DeltaTime;
 	}
 	if (GetAsyncKeyState(VK_NUMPAD6) & 0x8000)
 	{
-		CameraYaw += DeltaTime;
+		NewYaw += DeltaTime;
 	}
 	if (GetAsyncKeyState(VK_NUMPAD8) & 0x8000)
 	{
-		CameraPitch += DeltaTime;
+		NewPitch += DeltaTime;
 	}
 	if (GetAsyncKeyState(VK_NUMPAD2) & 0x8000)
 	{
-		CameraPitch -= DeltaTime;
+		NewPitch -= DeltaTime;
 	}
 
 	// Limit rotation values
-	CameraYaw = fmodf(CameraYaw, std::numbers::pi_v<float> * 2.0f);
-	CameraPitch = std::min(CameraPitch, std::numbers::pi_v<float> * 0.5f);
-	CameraPitch = std::max(CameraPitch, -std::numbers::pi_v<float> * 0.5f);
+	NewYaw = fmodf(NewYaw, std::numbers::pi_v<float> * 2.0f);
+	NewPitch = std::min(NewPitch, std::numbers::pi_v<float> * 0.5f);
+	NewPitch = std::max(NewPitch, -std::numbers::pi_v<float> * 0.5f);
+
+	{
+		std::lock_guard<std::mutex> Lock(PoseMutex);
+		CameraYaw = NewYaw;
+		CameraPitch = NewPitch;
+	}
 
 	UpdateKeyInputs();
 }
@@ -150,14 +161,8 @@ void EmulatedVR::SubmitEye(EVR_Eye Eye, ID3D11Texture2D* Texture, const VR_Bound
 	}
 }
 
-void EmulatedVR::SetDevice(ID3D11Device* InDevice)
+void EmulatedVR::EndFrame()
 {
-	this->Device = InDevice;
-}
-
-void EmulatedVR::SetDeviceContext(ID3D11DeviceContext* InContext)
-{
-	this->DeviceContext = InContext;
 }
 
 int32_t EmulatedVR::GetDesiredWidth() const
@@ -177,10 +182,19 @@ float EmulatedVR::GetVerticalFieldOfView(EVR_Eye Eye) const
 
 Matrix4 EmulatedVR::GetHMDTransform() const
 {
-	// Convert pitch and yaw into rotation transform, then add camera offset
-	Matrix4 Rotation = Matrix4().rotateZ(Rad2Deg(-CameraYaw)) * Matrix4().rotateY(Rad2Deg(-CameraPitch));
+	float Yaw, Pitch;
+	Vector3 Offset;
+	{
+		std::lock_guard<std::mutex> Lock(PoseMutex);
+		Yaw = CameraYaw;
+		Pitch = CameraPitch;
+		Offset = CameraOffset;
+	}
 
-	return Rotation * Matrix4().translate(CameraOffset);
+	// Convert pitch and yaw into rotation transform, then add camera offset
+	Matrix4 Rotation = Matrix4().rotateZ(Rad2Deg(-Yaw)) * Matrix4().rotateY(Rad2Deg(-Pitch));
+
+	return Rotation * Matrix4().translate(Offset);
 }
 
 Matrix4 EmulatedVR::GetEyeTransform(EVR_Eye Eye) const
@@ -518,5 +532,17 @@ void EmulatedVR::ActivateActionSet(InputBindingID ID)
 }
 
 void EmulatedVR::DeactivateActionSet(InputBindingID ID)
+{
+}
+
+void EmulatedVR::DrawOverlay(ID3D11DeviceContext* Context, ID3D11Texture2D* SourceTexture)
+{
+}
+
+void EmulatedVR::ShowOverlay()
+{
+}
+
+void EmulatedVR::HideOverlay()
 {
 }
