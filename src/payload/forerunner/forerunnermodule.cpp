@@ -102,6 +102,9 @@ void ForerunnerModule::Initialise()
 		FORERUNNER_LOG(Forerunner, "Successfully found all MCC globals");
 	}
 
+	// Patch out "helpful" function which tries to set thread names when a debugger is attached, but actually just causes an unhandled exception to get raised
+	WriteBytes(debugger_crash, {0xeb});
+
 	// Injection didn't occur until after UE4's start up completed, hook rendering immediately
 	if (UE4SwapChain())
 	{
