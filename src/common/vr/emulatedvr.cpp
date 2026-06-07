@@ -21,12 +21,32 @@ bool EmulatedVR::Init(struct ID3D11Device* InDevice, struct ID3D11DeviceContext*
 	Device = InDevice;
 	DeviceContext = InContext;
 
+	WindowThread = std::thread([this]() {
+        bRunning = CreateVRWindow();
+		bRunning = bRunning && CreateDirectXObjects();
+        ShowWindow(VRWindow, SW_SHOW);
+        UpdateWindow(VRWindow);
+        MSG Message{};
+        while (bRunning && GetMessageW(&Message, nullptr, 0, 0)) {
+            TranslateMessage(&Message);
+            DispatchMessage(&Message);
+        }
+    });
+
 	return true;
 }
 
 void EmulatedVR::Shutdown()
 {
-	CloseWindow(VRWindow);
+	FORERUNNER_LOG(EmuVR, "Shutting down");
+
+	bRunning = false;
+	if (WindowThread.joinable())
+	{
+		WindowThread.join();
+	}
+
+	DestroyWindow(VRWindow);
 
 	VRWindow = nullptr;
 	UnregisterClassW(L"ForerunnerVRClass", GetModuleHandleW(0));
@@ -42,30 +62,6 @@ void EmulatedVR::Shutdown()
 
 void EmulatedVR::Update(float DeltaTime)
 {
-	// Dirty hack for Win32 API requiring window updates happen on the same thread, but Init + Update potentially being called from different threads
-	if (!VRWindow)
-	{
-		if (!CreateVRWindow())
-		{
-			return;
-		}
-
-		if (!CreateDirectXObjects())
-		{
-			return;
-		}
-
-		ShowWindow(VRWindow, SW_SHOW);
-		UpdateWindow(VRWindow);
-	}
-
-	MSG Message{};
-	while (PeekMessageW(&Message, VRWindow, 0, 0, PM_REMOVE))
-	{
-		TranslateMessage(&Message);
-		DispatchMessage(&Message);
-	}
-
 	float NewYaw = CameraYaw;
 	float NewPitch = CameraPitch;
 

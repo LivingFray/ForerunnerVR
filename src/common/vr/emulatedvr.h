@@ -4,6 +4,7 @@
 #include "common/utils/vectors.h"
 #include "common/utils/log.h"
 #include <mutex>
+#include <thread>
 
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
@@ -58,4 +59,7 @@ protected:
 	float CameraPitch = 0.0f;
 	Vector3 CameraOffset = Vector3(0.0f, 0.0f, 0.05f);
 	mutable std::mutex PoseMutex;
+
+	std::thread WindowThread;
+	std::atomic<bool> bRunning{true};
 };
