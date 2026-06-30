@@ -4,6 +4,7 @@
 #include "common/utils/inject.h"
 #include "common/vr/IVR.h"
 // Blam decomp code
+#include "payload/delta/blam/halo_main.h"
 #include "payload/delta/blam/game/game.h"
 #include "payload/delta/blam/game/players.h"
 #include "payload/delta/blam/interface/first_person_weapons.h"
@@ -103,7 +104,8 @@ using AllPatches = Patch::PatchList<
 	interface_draw_splitscreen_borders,
 	players_update_before_game,
 	game_update,
-	first_person_update_bones
+	first_person_update_bones,
+	h2a2_change_render_mode
 >;
 
 bool DeltaModule::CreatePatches()
@@ -141,6 +143,7 @@ bool DeltaModule::FindGlobals()
 	bSuccess |= g_hud_scaling.Find();
 	bSuccess |= hud_set_size_and_safe_area.Find();
 	bSuccess |= interpolation_get_object_position.Find();
+	bSuccess |= target_graphics_mode.Find();
 
 	return bSuccess;
 }
