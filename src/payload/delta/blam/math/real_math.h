@@ -7,7 +7,12 @@ struct real_vector2d
 };
 static_assert(sizeof(real_vector2d) == 0x8);
 
-using real_point2d = real_vector2d;
+struct real_point2d
+{
+	float x;
+	float y;
+};
+static_assert(sizeof(real_point2d) == 0x8);
 
 struct real_vector3d
 {
@@ -17,7 +22,13 @@ struct real_vector3d
 };
 static_assert(sizeof(real_vector3d) == 0xc);
 
-using real_point3d = real_vector3d;
+struct real_point3d
+{
+	float x;
+	float y;
+	float z;
+};
+static_assert(sizeof(real_point3d) == 0xc);
 
 struct real_vector4d
 {
@@ -28,7 +39,14 @@ struct real_vector4d
 };
 static_assert(sizeof(real_vector4d) == 0x10);
 
-using real_point4d = real_vector4d;
+struct real_point4d
+{
+	float x;
+	float y;
+	float z;
+	float w;
+};
+static_assert(sizeof(real_point4d) == 0x10);
 
 struct real_plane3d
 {

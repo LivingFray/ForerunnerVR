@@ -108,7 +108,8 @@ using AllPatches = Patch::PatchList<
 	game_update,
 	first_person_update_bones,
 	h2a2_change_render_mode,
-	c_animation2_rig_definition__node_matrices_from_orientations
+	c_animation2_rig_definition__node_matrices_from_orientations,
+	c_animation2_rig_definition__node_matrices_from_orientations_with_gun_hand_swap
 >;
 
 bool DeltaModule::CreatePatches()
@@ -149,6 +150,8 @@ bool DeltaModule::FindGlobals()
 	bSuccess |= target_graphics_mode.Find();
 	bSuccess |= matrix4x3_from_orientation.Find();
 	bSuccess |= matrix4x3_multiply.Find();
+	bSuccess |= matrix4x3_to_point_and_vectors.Find();
+	bSuccess |= matrix4x3_from_point_and_vectors.Find();
 	bSuccess |= g_cache_file_globals__tags_header.Find();
 	bSuccess |= g_tags_physical_memory.Find();
 

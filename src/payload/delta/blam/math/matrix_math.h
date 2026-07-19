@@ -2,4 +2,6 @@
 #include "payload/forerunner/patch.h"
 
 FUNCTION("halo2.dll", 0x7299f0, "?? 89 5c ?? 08 57 ?? 83 ec 20 ?? 8b da ?? 8b f9 e8 ?? ?? ?? ?? f2 0f 10 43 10 f2 0f 11 47 28", 0, void, matrix4x3_from_orientation, struct real_matrix4x3* matrix, struct real_orientation* orientation);
+FUNCTION("halo2.dll", 0x729ba0, "?? 83 ec 28 c7 01 00 00 80 3f f2 ?? 0f 10 00 f2 0f 11 41 04 ?? 8b 40 08 89 41 0c f3 ?? 0f 10 59 08 f3 ?? 0f 10 50 08 0f 28 c3 f3 ?? 0f 10 21 0f 28 ca f3 ?? 0f 10 28 0f 29 74 ?? 10", 0, void, matrix4x3_from_point_and_vectors, struct real_matrix4x3* matrix, struct real_point3d* point, struct real_vector3d* forward, struct real_vector3d* up);
 FUNCTION("halo2.dll", 0x72a150, "48 83 ec 48 ?? 3b c8 75 ?? 0f 10 01 8b 41 30 0f 10 49 10 89 44 ?? 30 0f 11 04 ?? 0f 10 41 20 ?? 8d 0c ??", 0, void, matrix4x3_multiply, struct real_matrix4x3* a, struct real_matrix4x3* b, struct real_matrix4x3* result);
+FUNCTION("halo2.dll", 0x72ad90, "f2 0f 10 41 04 f2 ?? 0f 11 00 8b 41 0c ?? 89 40 08 f2 0f 10 41 1c f2 ?? 0f 11 01 8b 41 24 ?? 89 41 08 f2 0f 10 41 28 f2 0f 11 02 8b 41 30 89 42 08 c3", 0, void, matrix4x3_to_point_and_vectors, struct real_matrix4x3* matrix, struct real_point3d* point, struct real_vector3d* forward, struct real_vector3d* up);
