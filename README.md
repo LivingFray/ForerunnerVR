@@ -34,6 +34,7 @@ This project is built using cmake and is split into two projects: the launcher (
 - Debug
 - Debug Emu (replaces the VR backend with an emulated version which displays in a separate window, useful for debugging without having to put on a headset every 5 minutes)
 - Release
+  
 If you added a file to the project and its not being seen by the compiler you may need to refresh the CMakeLists.txt files as they GLOB for source files and can get cached with an outdated list.
 ### Style
 References to halo game code (patches, variables, struct layouts, etc) should be placed in a corresponding file in the blam directory in the module's folder, e.g. the definitions for vectors for halo 2 can be found in `/payload/blam/math/real_math.h`. Ideally symbol names, files and folders should use the actual names from the original source code, as best as we can infer it from available sources.
