@@ -62,6 +62,9 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Vector4, x, y, z, w);
 				CFG_VALUE(float, Scale, 2.0f, "Width of the menu UI overlay in meters") \
 				CFG_VALUE(bool, FollowHead, false, "Move the menu UI overlay to always be in front of the HMD, rather than at a set position determined when the UI is first shown") \
 			CFG_CAT_END(Menu) \
+			CFG_CAT(Cinematics) \
+				CFG_VALUE(bool, DisableLetterboxing, true, "Disable the black bars that appear at the top and bottom of the screen during cutscenes/cinematic moments") \
+			CFG_CAT_END(Cinematics) \
 		CFG_CAT_END(UI) \
 	CFG_CAT_END(Forerunner)
 

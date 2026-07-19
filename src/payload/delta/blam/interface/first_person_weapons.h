@@ -388,6 +388,6 @@ struct first_person_weapon
 };
 static_assert(sizeof(first_person_weapon) == 0x20fc);
 
-GLOBAL(first_person_weapon*, first_person_weapons, "halo2.dll", 0x187c300, "", 0);
+GLOBAL(first_person_weapon*, first_person_weapons, "halo2.dll", 0x187c300, "?? 8b 35 ?? ?? ?? ?? ?? 03 f4 ?? 8b 51 48 ?? 85 d2 74 ?? ?? 8d 04 0a eb ?? ?? 33 c0 0f b7 c8 ?? 69 c1 24 02 00 00", +3);
 
 PATCH("halo2.dll", 0x8181f0, "?? 89 5c ?? 18 ?? 89 4c ?? 20 89 54 ?? 10 89 4c ?? 08 55 56 57 ?? 54 ?? 55 ?? 56 ?? 57 ?? 8d ac ?? 50 ff ff ff ?? 81 ec b0 01 00 00 ?? 33 e4", first_person_weapon_build_models, int, int32_t user_index, datum object_id, real_vector3d* translation, real_vector3d* facing, real_vector3d* up, int32_t maximum_model_count, s_model* models, bool param_8);
