@@ -4,6 +4,9 @@
 #include "payload/delta/blam/math/matrix_math.h"
 #include "payload/delta/blam/tag_files/tag_groups.h"
 
+#include "payload/delta/deltamodule.h"
+#include "common/utils/utils.h"
+
 void c_animation2_rig_definition__node_matrices_from_orientations::Patch(c_animation2_rig_definition* This, real_matrix4x3* node_matrices, real_orientation* node_orientations, real_matrix4x3* root)
 {
 	if (This->nodes.count <= 0)
@@ -36,13 +39,11 @@ void c_animation2_rig_definition__node_matrices_from_orientations::Patch(c_anima
 
 		if (node.next_sibling_node_index != -1)
 		{
-			queue[write_idx] = node.next_sibling_node_index;
-			write_idx++;
+			queue[write_idx++] = node.next_sibling_node_index;
 		}
 		if (node.first_child_node_index != -1)
 		{
-			queue[write_idx] = node.first_child_node_index;
-			write_idx++;
+			queue[write_idx++] = node.first_child_node_index;
 		}
 	}
 }
@@ -76,7 +77,7 @@ void c_animation2_rig_definition__node_matrices_from_orientations_with_gun_hand_
 		real_matrix4x3 local_transform;
 		matrix4x3_from_orientation(&local_transform, &node_orientations[queue_ptr]);
 
-		// Swap hands
+		// Swap hands, TODO: This is broken for some reason. It looks identical to the output in ghidra but makes the guns go invisible
 		if (child_node_index == queue_ptr)
 		{
 			parent_matrix = &node_matrices[alternate_parent_node_matrix];
@@ -98,13 +99,11 @@ void c_animation2_rig_definition__node_matrices_from_orientations_with_gun_hand_
 
 		if (node.next_sibling_node_index != -1)
 		{
-			queue[write_idx] = node.next_sibling_node_index;
-			write_idx++;
+			queue[write_idx++] = node.next_sibling_node_index;
 		}
 		if (node.first_child_node_index != -1)
 		{
-			queue[write_idx] = node.first_child_node_index;
-			write_idx++;
+			queue[write_idx++] = node.first_child_node_index;
 		}
 	}
 }

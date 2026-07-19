@@ -106,10 +106,11 @@ using AllPatches = Patch::PatchList<
 	interface_draw_splitscreen_borders,
 	players_update_before_game,
 	game_update,
-	first_person_update_bones,
-	h2a2_change_render_mode,
-	c_animation2_rig_definition__node_matrices_from_orientations,
-	c_animation2_rig_definition__node_matrices_from_orientations_with_gun_hand_swap
+	first_person_weapon_build_models,
+	h2a2_change_render_mode
+	// TODO: Can't seem to control the model with these, look into this later
+	//c_animation2_rig_definition__node_matrices_from_orientations,
+	//c_animation2_rig_definition__node_matrices_from_orientations_with_gun_hand_swap
 >;
 
 bool DeltaModule::CreatePatches()
@@ -154,6 +155,7 @@ bool DeltaModule::FindGlobals()
 	bSuccess |= matrix4x3_from_point_and_vectors.Find();
 	bSuccess |= g_cache_file_globals__tags_header.Find();
 	bSuccess |= g_tags_physical_memory.Find();
+	bSuccess |= first_person_weapons.Find();
 
 	return bSuccess;
 }

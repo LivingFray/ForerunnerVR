@@ -4,19 +4,20 @@
 #include "payload/delta/blam/game/players.h"
 #include "payload/delta/blam/objects/objects.h"
 
-int first_person_update_bones::Patch(int user_index, datum object_id, real_vector3d* translation, real_vector3d* facing, real_vector3d* up, int maximum_model_count, s_model* models, bool param_8)
+int first_person_weapon_build_models::Patch(int user_index, datum object_id, real_vector3d* translation, real_vector3d* facing, real_vector3d* up, int maximum_model_count, s_model* models, bool param_8)
 {
-	//real_vector3d CameraLocation = SameCast<real_vector3d>(DeltaModule::Get().Camera.GetGameCameraLocation());
+	real_vector3d CameraLocation = SameCast<real_vector3d>(DeltaModule::Get().Camera.GetGameCameraLocation());
 
-	//object_datum* player = player_get_object_datum(0);
+	object_datum* player = player_get_object_datum(0);
 
-	//if (!player)
-	//{
-	//	return Original(user_index, object_id, &CameraLocation, facing, up, maximum_model_count, models, param_8);
-	//}
+	if (!player)
+	{
+		return Original(user_index, object_id, &CameraLocation, facing, up, maximum_model_count, models, param_8);
+	}
+
+	// Disable adjustments
+	first_person_weapons[user_index].flags &= ~4;
 
 	// NB: This doesn't account for interpolation, turning leads to stuttery movement
-	//return Original(user_index, object_id, &CameraLocation, &player->object.forward, &player->object.up, maximum_model_count, models, param_8);
-
-	return Original(user_index, object_id, translation, facing, up, maximum_model_count, models, param_8);
+	return Original(user_index, object_id, &CameraLocation, &player->object.forward, &player->object.up, maximum_model_count, models, param_8);
 }

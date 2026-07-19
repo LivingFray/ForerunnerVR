@@ -178,4 +178,30 @@ struct std::formatter<euler_angles2d> : std::formatter<std::string_view>
 	{
 		return std::format_to(ctx.out(), "[yaw = {}, pitch = {}]", e.yaw, e.pitch);
 	}
+}; 
+template <>
+struct std::formatter<real_matrix3x3> : std::formatter<std::string_view>
+{
+	constexpr auto parse(std::format_parse_context& ctx)
+	{
+		return ctx.begin();
+	}
+
+	auto format(real_matrix3x3 m, std::format_context& ctx) const
+	{
+		return std::format_to(ctx.out(), "[[{}, {}, {}], [{}, {}, {}], [{}, {}, {}]]", m.matrix[0][0], m.matrix[0][1], m.matrix[0][2], m.matrix[1][0], m.matrix[1][1], m.matrix[1][2], m.matrix[2][0], m.matrix[2][1], m.matrix[2][2]);
+	}
+};
+template <>
+struct std::formatter<real_matrix4x3> : std::formatter<std::string_view>
+{
+	constexpr auto parse(std::format_parse_context& ctx)
+	{
+		return ctx.begin();
+	}
+
+	auto format(real_matrix4x3 m, std::format_context& ctx) const
+	{
+		return std::format_to(ctx.out(), "[scale = {}, rotation = {}, translation = {}]", m.scale, m.rotation, m.translation);
+	}
 };

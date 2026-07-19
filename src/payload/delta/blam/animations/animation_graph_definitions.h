@@ -29,5 +29,5 @@ struct c_animation2_rig_node
 };
 static_assert(sizeof(c_animation2_rig_node) == 0x20);
 
-PATCH("halo2.dll", 0x79f810, "", c_animation2_rig_definition__node_matrices_from_orientations, void, c_animation2_rig_definition*, struct real_matrix4x3*, struct real_orientation*, struct real_matrix4x3*);
-PATCH("halo2.dll", 0x79f940, "", c_animation2_rig_definition__node_matrices_from_orientations_with_gun_hand_swap, void, c_animation2_rig_definition*, struct real_matrix4x3*, struct real_orientation*, struct real_matrix4x3*, short child_node_index, short alternate_parent_node_matrix);
+PATCH("halo2.dll", 0x79f810, "?? 8b c4 ?? 89 40 18 ?? 54 ?? 55 ?? 57 ?? 81 ec 70 04 00 00 83 79 0c 00 ?? 8b e1 ?? 8b fa ?? 8b e9", c_animation2_rig_definition__node_matrices_from_orientations, void, c_animation2_rig_definition*, struct real_matrix4x3*, struct real_orientation*, struct real_matrix4x3*);
+PATCH("halo2.dll", 0x79f940, "?? 8b dc ?? 89 4b 20 ?? 89 43 18 ?? 89 ?? 08 ?? 55 ?? 81 ec d0 04 00 00 83 79 0c 00 ?? 8b ea ?? 8b c1", c_animation2_rig_definition__node_matrices_from_orientations_with_gun_hand_swap, void, c_animation2_rig_definition*, struct real_matrix4x3*, struct real_orientation*, struct real_matrix4x3*, short child_node_index, short alternate_parent_node_matrix);
