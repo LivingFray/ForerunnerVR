@@ -90,6 +90,21 @@ struct euler_angles2d
 };
 static_assert(sizeof(euler_angles2d) == 0x8);
 
+struct real_quaternion
+{
+	real_vector3d v;
+	float w;
+};
+static_assert(sizeof(real_quaternion) == 0x10);
+
+struct real_orientation
+{
+	real_quaternion rotation;
+	real_vector3d translation;
+	float scale;
+};
+static_assert(sizeof(real_orientation) == 0x20);
+
 
 // Formatting
 #include <format>

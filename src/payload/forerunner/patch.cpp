@@ -26,7 +26,7 @@ bool Patch::Initialise()
 	return true;
 }
 
-void* Patch::SearchSignature(const char* ModuleName, int64_t RVA, const char* Signature, const char* DebugName)
+void* Patch::SearchSignature(const char* ModuleName, int64_t RVA, const char* Signature, const char* DebugName, bool bSuppressFound)
 {
 	const char* SearchName = DebugName ? DebugName : Signature;
 
@@ -97,7 +97,7 @@ void* Patch::SearchSignature(const char* ModuleName, int64_t RVA, const char* Si
 	// Everything is still valid, use provided address
 	if (!bIsOutdated)
 	{
-		FORERUNNER_LOG(Patch, "{} ({}) successfully located at {:#08x}", SearchName, Signature, RVA);
+		if (!bSuppressFound) FORERUNNER_LOG(Patch, "{} ({}) successfully located at {:#08x}", SearchName, Signature, RVA);
 		return reinterpret_cast<void*>(reinterpret_cast<unsigned char*>(ModuleInfo.lpBaseOfDll) + RVA);
 	}
 
@@ -117,13 +117,31 @@ void* Patch::SearchSignature(const char* ModuleName, int64_t RVA, const char* Si
 
 		if (bFound)
 		{
-			FORERUNNER_LOG(Patch, "{} ({}) successfuly located at new RVA of {:#08x}", SearchName, Signature, i);
+			if (!bSuppressFound) FORERUNNER_LOG(Patch, "{} ({}) successfuly located at new RVA of {:#08x}", SearchName, Signature, i);
 			return reinterpret_cast<unsigned char*>(ModuleInfo.lpBaseOfDll) + i;
 		}
 	}
 
 	FORERUNNER_ERROR(Patch, "Failed to locate {} ({})", SearchName, Signature);
 	return nullptr;
+}
+
+int64_t Patch::GetRVAFromAddress(const char* ModuleName, void* Address)
+{
+	HMODULE TargetModule = Inject::FindModule(ModuleName);
+	if (!TargetModule)
+	{
+		return reinterpret_cast<int64_t>(Address);
+	}
+
+	MODULEINFO ModuleInfo;
+	BOOL Result = GetModuleInformation(GetCurrentProcess(), TargetModule, &ModuleInfo, sizeof(ModuleInfo));
+	if (!Result)
+	{
+		return reinterpret_cast<int64_t>(Address);
+	}
+
+	return reinterpret_cast<int64_t>(Address) - reinterpret_cast<int64_t>(ModuleInfo.lpBaseOfDll);
 }
 
 void Patch::WriteBytes(void* Address, const std::vector<uint8_t>& Bytes)

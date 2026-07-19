@@ -5,6 +5,7 @@
 #include "common/vr/IVR.h"
 // Blam decomp code
 #include "payload/delta/blam/halo_main.h"
+#include "payload/delta/blam/animations/animation_graph_definitions.h"
 #include "payload/delta/blam/game/game.h"
 #include "payload/delta/blam/game/players.h"
 #include "payload/delta/blam/interface/first_person_weapons.h"
@@ -12,6 +13,7 @@
 #include "payload/delta/blam/interface/hud.h"
 #include "payload/delta/blam/main/main_render.h"
 #include "payload/delta/blam/main/main_time.h"
+#include "payload/delta/blam/math/matrix_math.h"
 #include "payload/delta/blam/objects/objects.h"
 #include "payload/delta/blam/rasterizer/rasterizer_main.h"
 #include "payload/delta/blam/rasterizer/rasterizer_globals.h"
@@ -105,7 +107,8 @@ using AllPatches = Patch::PatchList<
 	players_update_before_game,
 	game_update,
 	first_person_update_bones,
-	h2a2_change_render_mode
+	h2a2_change_render_mode,
+	c_animation2_rig_definition__node_matrices_from_orientations
 >;
 
 bool DeltaModule::CreatePatches()
@@ -144,6 +147,10 @@ bool DeltaModule::FindGlobals()
 	bSuccess |= hud_set_size_and_safe_area.Find();
 	bSuccess |= interpolation_get_object_position.Find();
 	bSuccess |= target_graphics_mode.Find();
+	bSuccess |= matrix4x3_from_orientation.Find();
+	bSuccess |= matrix4x3_multiply.Find();
+	bSuccess |= g_cache_file_globals__tags_header.Find();
+	bSuccess |= g_tags_physical_memory.Find();
 
 	return bSuccess;
 }

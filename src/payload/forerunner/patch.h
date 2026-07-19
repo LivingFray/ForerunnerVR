@@ -160,7 +160,8 @@ protected: \
 namespace Patch
 {
 	bool Initialise();
-	void* SearchSignature(const char* ModuleName, int64_t RVA, const char* Signature, const char* DebugName = nullptr);
+	void* SearchSignature(const char* ModuleName, int64_t RVA, const char* Signature, const char* DebugName = nullptr, bool bSuppressFound = false);
+	int64_t GetRVAFromAddress(const char* ModuleName, void* Address);
 	void WriteBytes(void* Address, const std::vector<uint8_t>& Bytes);
 	void WriteNOPs(void* Address, int Length);
 	bool AreThreadsSuspended();
@@ -184,9 +185,9 @@ namespace Patch
 
 	protected:
 
-		void* SearchMemory(int64_t RVA)
+		void* SearchMemory(int64_t RVA, bool bSuppressFound = false)
 		{
-			return Patch::SearchSignature(this->Module, RVA, this->Signature, this->DebugName);
+			return Patch::SearchSignature(this->Module, RVA, this->Signature, this->DebugName, bSuppressFound);
 		}
 
 		void* SearchRipRelative()
@@ -207,7 +208,7 @@ namespace Patch
 			}
 
 			// Find the memory address of the code which points to this global
-			Address = this->SearchMemory(0);
+			Address = this->SearchMemory(0, true);
 			if (!Address)
 			{
 				return 0;
@@ -219,8 +220,11 @@ namespace Patch
 			unsigned char* AdjustedAddress = reinterpret_cast<unsigned char*>(Address) + this->Offset;
 			unsigned char* RIP = AdjustedAddress + 4;
 			int32_t RIPOffset = *reinterpret_cast<int32_t*>(AdjustedAddress);
+			void* Result = reinterpret_cast<void*>(RIP + RIPOffset);
 
-			return reinterpret_cast<void*>(RIP + RIPOffset);
+			FORERUNNER_LOG(Patch, "{} ({}) successfuly located at RVA of {:#08x}", this->DebugName, Signature, Patch::GetRVAFromAddress(this->Module, Result));
+
+			return Result;
 		}
 
 		T* Value = nullptr;
