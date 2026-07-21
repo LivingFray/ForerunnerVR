@@ -55,3 +55,4 @@ OFFSET(calculate_viewport__left, "halo2.dll", 0x7e0b35, "66 83 42 02 04 41 0f bf
 OFFSET(calculate_viewport__right, "halo2.dll", 0x7e0b56, "66 83 42 06 fc 66 83 7e 02 00 75 ?? 0f b7 44 24 50 66 89 07", +4);
 OFFSET(calculate_viewport__bottom, "halo2.dll", 0x7e0b6b, "66 83 02 04 41 0f bf 46 02 0f bf 4e 02 03 c8 0f bf 45 02 3b c8", +3);
 OFFSET(calculate_viewport__top, "halo2.dll", 0x7e0b9a, "66 83 42 04 fc 48 8b 6c 24 58 48 83 c4 20 41 5e 5f 5e c3", +4);
+OFFSET(anniv_update_player_views__cinematic_check, "halo2.dll", 0x960698, "e8 ?? ?? ?? ?? ?? 33 f6 84 c0 74 ?? 8d 7b 02 eb ?? e8 ?? ?? ?? ?? 8b f8 83 f8 01", 0);

@@ -122,7 +122,7 @@ void InputComponent::ModifyInputVector(Vector2& Input, EVR_Controller Controller
 {
 	CameraComponent& CameraComponent = DeltaModule::Get().Camera;
 
-	Matrix4 HMDTransform = CameraComponent.GetCameraTransform();
+	Matrix4 HMDTransform = CameraComponent.GetHMDTransform();
 	Matrix4 ControllerTransform = CameraComponent.GetControllerTransform(Controller);
 
 	Vector3 CameraFacing = HMDTransform.getLeftAxis();

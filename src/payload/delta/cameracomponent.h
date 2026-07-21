@@ -16,7 +16,7 @@ public:
 	void RecentreCamera();
 
 	// Get the HMD transform in local space, accounting for recentres
-	Matrix4 GetCameraTransform() const;
+	Matrix4 GetHMDTransform() const;
 
 	// Get a controller transform in local space, accounting for recentres
 	Matrix4 GetControllerTransform(EVR_Controller Controller) const;
@@ -40,6 +40,8 @@ public:
 	}
 
 protected:
+
+	void SetCameraTransform(struct render_window* RenderWindow, const Vector3& Position, const Vector3& Forward, const Vector3& Up);
 
 	void UpdateOffsetMatrix();
 

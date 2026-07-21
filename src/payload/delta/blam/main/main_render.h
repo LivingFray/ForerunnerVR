@@ -13,4 +13,5 @@ const static float METRES_TO_WORLD = 1 / WORLD_TO_METRES;
 PATCH("halo2.dll", 0x960780, "40 53 55 56 57 41 57 48 81 ec 90 00 00 00 8b 84 24 e8 00 00 00 45 8b f9", compute_window_bounds, void, render_window* render_window, int param2, int view_index, int view_count, int param5, int player_index, camera_result* result);
 FUNCTION("halo2.dll", 0x8d6000, "?? 89 5c ?? 08 57 ?? 83 ec 20 ?? 8b da 8b f9 e8 ?? ?? ?? ?? 84 c0 74 ?? ?? 8b c3 ?? 8b 5c ?? 30 ?? 83 c4 20 5f c3", 0, real_vector3d*, interpolation_get_object_position, datum param1, real_vector3d* param2);
 
-OFFSET(main_render_player_view__cinematic_in_progress, "halo2.dll", 0x960256, "", 0);
+OFFSET(main_render_player_view__cinematic_in_progress, "halo2.dll", 0x960256, "e8 ?? ?? ?? ?? ?? 33 f6 8d 6b 05 84 c0 74 ?? 8d 7b 02 eb", 0);
+OFFSET(main_render_player_view__cinematic_in_progress_2, "halo2.dll", 0x9602d1, "e8 ?? ?? ?? ?? ?? 8b 7c ?? 40 84 c0 74 ?? be 01 00 00 00", 0);

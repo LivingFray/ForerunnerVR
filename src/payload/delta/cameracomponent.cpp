@@ -5,6 +5,7 @@
 #include "payload/delta/blam/math/real_math.h"
 #include "payload/delta/blam/render/render.h"
 #include "payload/delta/blam/render/render_cameras.h"
+#include "payload/delta/blam/cutscene/cinematics.h"
 
 #include "common/utils/utils.h"
 #include "common/utils/matrices.h"
@@ -20,7 +21,7 @@ void CameraComponent::UpdatePlayerCamera(float InYaw, float& OutYaw, float& OutP
 		UpdateOffsetMatrix();
 	}
 	
-	const Matrix4 HMDMatrix = GetCameraTransform();
+	const Matrix4 HMDMatrix = GetHMDTransform();
 
 	// Extract the forward vector from the HMD matrix
 	Vector3 HMDFacing = HMDMatrix.getLeftAxis();
@@ -47,7 +48,38 @@ void CameraComponent::UpdateRenderCamera(struct render_window* render_window, in
 	render_window->rasterizer_camera.vertical_field_of_view = FOV;
 	render_window->render_camera.vertical_field_of_view = FOV;
 
+	if (cinematic_in_progress())
+	{
+		Vector3 CameraPos = SameCast<Vector3>(render_window->rasterizer_camera.position);
 
+		// Get yaw from cutscene camera
+		const Vector3 CutsceneForward = SameCast<Vector3>(render_window->rasterizer_camera.forward);
+		const float CameraYaw = atan2f(CutsceneForward.y, CutsceneForward.x);
+
+		const Matrix4 CutsceneMatrix = Matrix4().rotateZ(Rad2Deg(CameraYaw));
+
+		const Matrix4 EyeMatrix = CutsceneMatrix * Matrix4().scale(METRES_TO_WORLD) * GetHMDTransform() * ForerunnerModule::Get().VR->GetEyeTransform(Eye);
+
+		// Add eye translation
+		CameraPos = CameraPos + Vector3FromVector4(EyeMatrix * Vector4FromPoint(Vector3()));
+
+		const Vector3 WorldForward(1.0f, 0.0f, 0.0f);
+		const Vector3 WorldUp(0.0f, 0.0f, 1.0f);
+
+		// Transform eye location
+		Vector3 CameraForward = Vector3FromVector4(EyeMatrix * Vector4FromVector(WorldForward));
+		Vector3 CameraUp = Vector3FromVector4(EyeMatrix * Vector4FromVector(WorldUp));
+
+		CameraForward.normalize();
+		CameraUp.normalize();
+
+		// Apply new vectors
+		SetCameraTransform(render_window, CameraPos, CameraForward, CameraUp);
+
+		return;
+	}
+	
+	// Normal VR camera logic for gameplay
 	// TODO: Vehicles + cutscenes will ruin this
 	// TODO: Crouch will also break this
 	real_vector3d InterpolatedPosition;
@@ -68,10 +100,9 @@ void CameraComponent::UpdateRenderCamera(struct render_window* render_window, in
 	// Needs to handle roomscale movement + apply remainder to camera
 	// Also also needs to account for default eye height vs ground
 
-	// TODO: Cutscenes
 	// TODO: Vehicles
 
-	Matrix4 EyeMatrix = Matrix4().scale(METRES_TO_WORLD) * GetCameraTransform() * ForerunnerModule::Get().VR->GetEyeTransform(Eye);
+	Matrix4 EyeMatrix = Matrix4().scale(METRES_TO_WORLD) * GetHMDTransform() * ForerunnerModule::Get().VR->GetEyeTransform(Eye);
 
 	// Add eye translation
 	CameraPos = CameraPos + Vector3FromVector4(EyeMatrix * Vector4FromPoint(Vector3()));
@@ -85,14 +116,7 @@ void CameraComponent::UpdateRenderCamera(struct render_window* render_window, in
 	CameraForward.normalize();
 	CameraUp.normalize();
 
-	render_window->rasterizer_camera.position = SameCast<real_point3d>(CameraPos);
-	render_window->render_camera.position = SameCast<real_point3d>(CameraPos);
-
-	render_window->rasterizer_camera.forward = SameCast<real_vector3d>(CameraForward);
-	render_window->render_camera.forward = SameCast<real_vector3d>(CameraForward);
-
-	render_window->rasterizer_camera.up = SameCast<real_vector3d>(CameraUp);
-	render_window->render_camera.up = SameCast<real_vector3d>(CameraUp);
+	SetCameraTransform(render_window, CameraPos, CameraForward, CameraUp);
 }
 
 void CameraComponent::RecentreCamera()
@@ -105,7 +129,7 @@ void CameraComponent::RecentreCamera()
 	UpdateOffsetMatrix();
 }
 
-Matrix4 CameraComponent::GetCameraTransform() const
+Matrix4 CameraComponent::GetHMDTransform() const
 {
 	return OffsetMatrix * ForerunnerModule::Get().VR->GetHMDTransform();
 }
@@ -113,6 +137,18 @@ Matrix4 CameraComponent::GetCameraTransform() const
 Matrix4 CameraComponent::GetControllerTransform(EVR_Controller Controller) const
 {
 	return OffsetMatrix * ForerunnerModule::Get().VR->GetControllerTransform(Controller);
+}
+
+void CameraComponent::SetCameraTransform(render_window* RenderWindow, const Vector3& Position, const Vector3& Forward, const Vector3& Up)
+{
+	RenderWindow->rasterizer_camera.position = SameCast<real_point3d>(Position);
+	RenderWindow->render_camera.position = SameCast<real_point3d>(Position);
+
+	RenderWindow->rasterizer_camera.forward = SameCast<real_vector3d>(Forward);
+	RenderWindow->render_camera.forward = SameCast<real_vector3d>(Forward);
+
+	RenderWindow->rasterizer_camera.up = SameCast<real_vector3d>(Up);
+	RenderWindow->render_camera.up = SameCast<real_vector3d>(Up);
 }
 
 void CameraComponent::UpdateOffsetMatrix()

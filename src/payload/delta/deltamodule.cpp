@@ -199,6 +199,11 @@ bool DeltaModule::PatchSplitscreen()
 	WriteBytes(calculate_viewport__bottom, {0x0});
 	WriteBytes(calculate_viewport__top, {0x0});
 
+	// For splitscreen rendering during cutscenes
+	WriteBytes(main_render_player_view__cinematic_in_progress, {0x48, 0x31, 0xC0, 0x90, 0x90});
+	WriteBytes(main_render_player_view__cinematic_in_progress_2, {0x48, 0x31, 0xC0, 0x90, 0x90});
+	WriteBytes(anniv_update_player_views__cinematic_check, {0x48, 0x31, 0xC0, 0x90, 0x90});
+
 	return true;
 }
 
