@@ -53,4 +53,6 @@ protected:
 	float OffsetYaw = 0.0f;
 
 	Matrix4 OffsetMatrix;
+
+	bool WasInCinematic = false;
 };

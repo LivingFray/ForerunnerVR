@@ -48,8 +48,21 @@ void CameraComponent::UpdateRenderCamera(struct render_window* render_window, in
 	render_window->rasterizer_camera.vertical_field_of_view = FOV;
 	render_window->render_camera.vertical_field_of_view = FOV;
 
-	if (cinematic_in_progress())
+	const bool IsInCinematic = cinematic_in_progress();
+
+	// Ensure last cinematic state is tracked regardless of code path
+	SCOPE_EXIT(
+		WasInCinematic = IsInCinematic;
+	);
+
+	if (IsInCinematic)
 	{
+		// First frame in cinematic, reset the camera to face the correct direction
+		if (!WasInCinematic)
+		{
+			RecentreCamera();
+		}
+
 		Vector3 CameraPos = SameCast<Vector3>(render_window->rasterizer_camera.position);
 
 		// Get yaw from cutscene camera
@@ -123,7 +136,9 @@ void CameraComponent::RecentreCamera()
 {
 	Matrix4 CurrentTransform = ForerunnerModule::Get().VR->GetHMDTransform();
 
-	OffsetYaw = 0.0f; // TODO: Extract yaw
+	const Vector3 CurrentFacing = CurrentTransform.getLeftAxis(); // Math library uses different coordinate system, "left" is forwards
+
+	OffsetYaw = Rad2Deg(atan2f(CurrentFacing.y, CurrentFacing.x));
 	OffsetLocation = Vector3FromVector4(CurrentTransform * Vector4FromPoint(Vector3()));
 
 	UpdateOffsetMatrix();
